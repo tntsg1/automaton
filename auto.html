@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>恒星锻造：自动化建造原型</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05070f;
+      --panel: rgba(12, 20, 35, 0.92);
+      --accent: #3fa9ff;
+      --accent-soft: rgba(63, 169, 255, 0.25);
+      --text: rgba(255, 255, 255, 0.82);
+      --text-soft: rgba(255, 255, 255, 0.58);
+      --danger: #ff5c5c;
+      font-family: "Segoe UI", "PingFang SC", system-ui, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 15%, rgba(52, 77, 132, 0.28), rgba(5, 7, 15, 0.92)), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem clamp(1.25rem, 2vw, 2.5rem);
+      background: linear-gradient(90deg, rgba(10, 15, 26, 0.92), rgba(24, 34, 58, 0.6));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(18px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    header h1 {
+      margin: 0;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    header span {
+      font-size: 0.9rem;
+      color: var(--text-soft);
+      letter-spacing: 0.08em;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(260px, 23vw) minmax(520px, 1fr) minmax(280px, 24vw);
+      gap: 1.25rem;
+      padding: clamp(1rem, 1.6vw, 2rem);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(18px);
+      max-height: calc(100vh - 130px);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    #resource-display {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .resource-card {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .resource-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+    }
+
+    .resource-value {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    #world-wrapper {
+      flex: 1;
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: radial-gradient(circle at 15% 20%, rgba(35, 50, 82, 0.2), rgba(2, 4, 9, 0.8));
+      position: relative;
+    }
+
+    #world-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--size), 36px);
+      grid-template-rows: repeat(var(--size), 36px);
+      gap: 0;
+      padding: 1.5rem;
+      width: fit-content;
+      margin: 0 auto;
+      background: radial-gradient(circle at center, rgba(34, 52, 82, 0.08), transparent 70%);
+    }
+
+    .tile {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+      position: relative;
+      transition: transform 120ms ease, box-shadow 160ms ease;
+      background: linear-gradient(155deg, rgba(16, 24, 35, 0.92), rgba(6, 10, 18, 0.95));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), inset 0 -6px 12px rgba(0, 0, 0, 0.55);
+    }
+
+    .tile::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 6px;
+      box-shadow: inset 0 0 0 1px rgba(12, 18, 28, 0.45);
+      pointer-events: none;
+      opacity: 0.65;
+    }
+
+    .tile:hover {
+      transform: translateY(-2px);
+      box-shadow: inset 0 0 0 1px rgba(63, 169, 255, 0.18), 0 14px 28px rgba(8, 24, 46, 0.42);
+    }
+
+    .tile.deposit-iron {
+      background: radial-gradient(circle at 40% 30%, rgba(92, 132, 220, 0.55), rgba(14, 20, 30, 0.95));
+    }
+
+    .tile.deposit-copper {
+      background: radial-gradient(circle at 45% 35%, rgba(218, 150, 92, 0.58), rgba(32, 18, 8, 0.9));
+    }
+
+    .tile.deposit-stone {
+      background: radial-gradient(circle at 50% 40%, rgba(142, 146, 166, 0.5), rgba(20, 22, 30, 0.9));
+    }
+
+    .tile.building {
+      box-shadow: inset 0 0 0 1px rgba(63, 169, 255, 0.38), 0 8px 16px rgba(16, 40, 68, 0.65);
+      background: linear-gradient(150deg, rgba(56, 112, 186, 0.35), rgba(10, 18, 28, 0.95));
+    }
+
+    .tile .icon {
+      pointer-events: none;
+    }
+
+    .selection-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .build-button {
+      flex: 1 1 46%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.7rem 0.9rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    .build-button.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .build-button.locked {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .build-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(63, 169, 255, 0.45);
+      background: rgba(63, 169, 255, 0.1);
+    }
+
+    .build-button .name {
+      font-weight: 600;
+    }
+
+    .build-button .cost {
+      font-size: 0.75rem;
+      color: var(--text-soft);
+    }
+
+    #log-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    #log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.85rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 0.78rem;
+      line-height: 1.6;
+      max-height: min(320px, 45vh);
+      overscroll-behavior: contain;
+    }
+
+    #log div + div {
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    #log-latest {
+      align-self: flex-end;
+      display: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      border: none;
+      background: rgba(63, 169, 255, 0.18);
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: background 120ms ease, transform 120ms ease;
+    }
+
+    #log-latest.visible {
+      display: inline-flex;
+    }
+
+    #log-latest:hover {
+      background: rgba(63, 169, 255, 0.28);
+      transform: translateY(-1px);
+    }
+
+    #research-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .tech {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      background: rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .tech button {
+      align-self: flex-start;
+      border: none;
+      background: rgba(63, 169, 255, 0.16);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+
+    .tech.completed {
+      border-color: rgba(126, 232, 159, 0.55);
+      background: rgba(50, 112, 72, 0.22);
+    }
+
+    .tech.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(63, 169, 255, 0.24);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .progress-bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(63, 169, 255, 0.85), rgba(126, 232, 159, 0.9));
+    }
+
+    #selection-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--text-soft);
+    }
+
+    #selection-info button {
+      border: none;
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text);
+      padding: 0.35rem 0.6rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #world-wrapper::-webkit-scrollbar,
+    #log::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #world-wrapper::-webkit-scrollbar-thumb,
+    #log::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1200px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        max-height: unset;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>恒星锻造</h1>
+    <span>戴森球计划式自动化建造试验场</span>
+  </header>
+  <main>
+    <section class="panel" id="left-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+        <h2>资源仓储</h2>
+        <button id="reset" style="border:none;background:rgba(255,92,92,0.14);color:var(--danger);padding:0.4rem 0.75rem;border-radius:8px;cursor:pointer;">重启</button>
+      </div>
+      <div id="resource-display"></div>
+      <div class="hint">提示：使用 Q/E 或旋转按钮改变朝向，右键开启拆除模式。矿机需要建造在矿脉上并连接传送带，机械臂能在相邻建筑间传输物品。</div>
+      <div>
+        <h2>研究进展</h2>
+        <div id="research-list"></div>
+      </div>
+    </section>
+    <section class="panel" id="center-panel" style="gap:0.75rem;">
+      <div id="selection-info">
+        <span id="current-tool">当前：闲置</span>
+        <button id="rotate-left">⟲</button>
+        <button id="rotate-right">⟳</button>
+        <button id="toggle-remove">拆除：关闭</button>
+      </div>
+      <div id="world-wrapper">
+        <div id="world-grid"></div>
+      </div>
+    </section>
+    <section class="panel" id="right-panel">
+      <div>
+        <h2>建造清单</h2>
+        <div class="selection-bar" id="build-menu"></div>
+      </div>
+      <div>
+        <h2>殖民记要</h2>
+        <div id="log-container">
+          <div id="log"></div>
+          <button id="log-latest" type="button">查看最新</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const WORLD_SIZE = 40;
+    const TICK_MS = 500;
+    const directions = [
+      { dx: 0, dy: -1, name: "上" },
+      { dx: 1, dy: 0, name: "右" },
+      { dx: 0, dy: 1, name: "下" },
+      { dx: -1, dy: 0, name: "左" },
+    ];
+
+    const initialResources = {
+      ironOre: 40,
+      copperOre: 40,
+      ironPlate: 20,
+      copperPlate: 20,
+      gear: 0,
+      circuit: 0,
+      sciencePack1: 0,
+    };
+
+    const resourceMeta = {
+      ironOre: { name: "铁矿石" },
+      copperOre: { name: "铜矿石" },
+      ironPlate: { name: "铁板" },
+      copperPlate: { name: "铜板" },
+      gear: { name: "齿轮" },
+      circuit: { name: "电路板" },
+      sciencePack1: { name: "科技包" },
+    };
+
+    let logStickToBottom = true;
+
+    const buildingCatalog = {
+      miner: {
+        id: "miner",
+        name: "行星采矿机",
+        icon: "⛏",
+        cost: { ironPlate: 6, copperPlate: 4 },
+        description: "部署在矿脉上提取矿石，向前方输出矿石。",
+        requires: () => true,
+        placement: tile => tile.deposit && !tile.building,
+      },
+      belt: {
+        id: "belt",
+        name: "传送带",
+        icon: "⇄",
+        cost: { ironPlate: 1 },
+        description: "沿着方向运输物品，最多容纳一件物品。",
+        requires: () => true,
+        placement: tile => !tile.deposit && !tile.building,
+      },
+      furnace: {
+        id: "furnace",
+        name: "熔炉",
+        icon: "♨",
+        cost: { ironPlate: 8 },
+        description: "消耗矿石冶炼为金属板。",
+        requires: state => state.research.unlocks.furnace,
+        placement: tile => !tile.deposit && !tile.building,
+      },
+      inserter: {
+        id: "inserter",
+        name: "机械臂",
+        icon: "🤖",
+        cost: { ironPlate: 2, copperPlate: 2 },
+        description: "从后方取物并放入前方建筑或传送带。",
+        requires: state => state.research.unlocks.inserter,
+        placement: tile => !tile.building,
+      },
+      assembler: {
+        id: "assembler",
+        name: "自动工作台",
+        icon: "⚙",
+        cost: { ironPlate: 8, copperPlate: 6 },
+        description: "消耗材料合成科技包。",
+        requires: state => state.research.unlocks.assembler,
+        placement: tile => !tile.deposit && !tile.building,
+      },
+      lab: {
+        id: "lab",
+        name: "研究中心",
+        icon: "🔬",
+        cost: { ironPlate: 6, copperPlate: 6 },
+        description: "消耗指定物品推进研究进度。",
+        requires: () => true,
+        placement: tile => !tile.deposit && !tile.building,
+      },
+    };
+
+    const techTree = [
+      {
+        id: "automation",
+        name: "基础自动化",
+        description: "解锁机械臂与自动工作台。",
+        cost: { ironPlate: 20, copperPlate: 15 },
+        unlocks: state => {
+          state.research.unlocks.inserter = true;
+          state.research.unlocks.assembler = true;
+          logEvent("基础自动化完成，自动化核心建筑现已可用。");
+        },
+      },
+      {
+        id: "logistics",
+        name: "输送网络",
+        description: "研究需要科技包，用于进一步扩展殖民地。",
+        requires: ["automation"],
+        cost: { sciencePack1: 12 },
+        unlocks: state => {
+          logEvent("输送网络完成，高级物流即将到来（占位）。");
+        },
+      },
+    ];
+
+    const gameState = {
+      world: [],
+      buildings: new Map(),
+      resources: {},
+      nextBuildingId: 1,
+      selection: null,
+      rotation: 1,
+      removing: false,
+      research: {
+        active: null,
+        progress: {},
+        unlocks: {
+          furnace: true,
+          inserter: false,
+          assembler: false,
+        },
+        completed: new Set(),
+      },
+    };
+
+    function resetState() {
+      gameState.world = generateWorld();
+      gameState.buildings = new Map();
+      gameState.resources = JSON.parse(JSON.stringify(initialResources));
+      gameState.nextBuildingId = 1;
+      gameState.selection = null;
+      gameState.rotation = 1;
+      gameState.removing = false;
+      gameState.research = {
+        active: null,
+        progress: {},
+        unlocks: { furnace: true, inserter: false, assembler: false },
+        completed: new Set(),
+      };
+      renderWorld();
+      updateResources();
+      renderBuildMenu();
+      renderResearch();
+      updateToolDisplay();
+      clearLog();
+      logEvent("殖民地初始化完成，矿脉生成于辽阔平原。");
+    }
+
+    function generateWorld() {
+      const world = [];
+      for (let y = 0; y < WORLD_SIZE; y++) {
+        const row = [];
+        for (let x = 0; x < WORLD_SIZE; x++) {
+          row.push({ deposit: null, building: null });
+        }
+        world.push(row);
+      }
+      generateDeposits(world, "iron", 6, 14);
+      generateDeposits(world, "copper", 6, 14);
+      generateDeposits(world, "stone", 4, 10);
+      return world;
+    }
+
+    function generateDeposits(world, type, clusters, radius) {
+      for (let i = 0; i < clusters; i++) {
+        const cx = Math.floor(Math.random() * WORLD_SIZE);
+        const cy = Math.floor(Math.random() * WORLD_SIZE);
+        const size = Math.floor(Math.random() * 4) + 4;
+        for (let j = 0; j < size; j++) {
+          const angle = Math.random() * Math.PI * 2;
+          const dist = Math.random() * (radius / 4);
+          const x = Math.max(0, Math.min(WORLD_SIZE - 1, Math.round(cx + Math.cos(angle) * dist)));
+          const y = Math.max(0, Math.min(WORLD_SIZE - 1, Math.round(cy + Math.sin(angle) * dist)));
+          world[y][x].deposit = type;
+        }
+      }
+    }
+
+    function renderWorld() {
+      const wrapper = document.getElementById("world-grid");
+      wrapper.style.setProperty("--size", WORLD_SIZE);
+      wrapper.innerHTML = "";
+      for (let y = 0; y < WORLD_SIZE; y++) {
+        for (let x = 0; x < WORLD_SIZE; x++) {
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          const data = gameState.world[y][x];
+          if (data.deposit) {
+            tile.classList.add(`deposit-${data.deposit}`);
+          }
+          if (data.building) {
+            tile.classList.add("building");
+            const building = gameState.buildings.get(data.building);
+            tile.innerHTML = `<span class="icon">${buildingCatalog[building.type].icon}</span>`;
+          }
+          tile.addEventListener("click", () => onTileClick(x, y));
+          tile.addEventListener("contextmenu", e => {
+            e.preventDefault();
+            toggleRemove();
+          });
+          wrapper.appendChild(tile);
+        }
+      }
+    }
+
+    function updateTile(x, y) {
+      const idx = y * WORLD_SIZE + x;
+      const wrapper = document.getElementById("world-grid");
+      const tileEl = wrapper.children[idx];
+      const data = gameState.world[y][x];
+      tileEl.className = "tile";
+      tileEl.innerHTML = "";
+      if (data.deposit) tileEl.classList.add(`deposit-${data.deposit}`);
+      if (data.building) {
+        tileEl.classList.add("building");
+        const building = gameState.buildings.get(data.building);
+        tileEl.innerHTML = `<span class="icon">${buildingCatalog[building.type].icon}</span>`;
+      }
+    }
+
+    function renderBuildMenu() {
+      const menu = document.getElementById("build-menu");
+      menu.innerHTML = "";
+      Object.values(buildingCatalog).forEach(def => {
+        const btn = document.createElement("button");
+        btn.className = "build-button";
+        const locked = !def.requires(gameState);
+        if (locked) btn.classList.add("locked");
+        if (gameState.selection === def.id) btn.classList.add("active");
+        btn.innerHTML = `<span class="name">${def.icon} ${def.name}</span><span class="cost">${formatCost(def.cost)}</span><span class="hint">${def.description}</span>`;
+        btn.addEventListener("click", () => {
+          if (locked) return;
+          gameState.selection = def.id;
+          gameState.removing = false;
+          updateToolDisplay();
+          renderBuildMenu();
+        });
+        menu.appendChild(btn);
+      });
+    }
+
+    function formatCost(cost) {
+      return Object.entries(cost)
+        .map(([id, amount]) => `${resourceMeta[id].name}×${amount}`)
+        .join("、");
+    }
+
+    function onTileClick(x, y) {
+      if (gameState.removing) {
+        removeBuilding(x, y);
+        return;
+      }
+      if (!gameState.selection) return;
+      const def = buildingCatalog[gameState.selection];
+      const tile = gameState.world[y][x];
+      if (!def.placement(tile)) {
+        logEvent("无法在该地块建造，检查地形或现有建筑。");
+        return;
+      }
+      if (!canAfford(def.cost)) {
+        logEvent("资源不足，无法建造。", true);
+        return;
+      }
+      spendResources(def.cost);
+      const id = gameState.nextBuildingId++;
+      const building = createBuilding(id, def.id, x, y, gameState.rotation);
+      gameState.buildings.set(id, building);
+      tile.building = id;
+      updateTile(x, y);
+      logEvent(`${def.name} 建造完成。`);
+      if (def.id === "lab" && !gameState.research.active) {
+        logEvent("点击左侧研究界面选择研究目标，让实验室投入运行。");
+      }
+    }
+
+    function createBuilding(id, type, x, y, rotation) {
+      const base = { id, type, x, y, rotation, items: [], inventory: {} };
+      switch (type) {
+        case "miner":
+          return { ...base, cooldown: 0 };
+        case "belt":
+          return { ...base, items: [] };
+        case "furnace":
+          return { ...base, inventory: { ironOre: 0, copperOre: 0, output: [] }, progress: 0 };
+        case "inserter":
+          return { ...base, held: null, cooldown: 0 };
+        case "assembler":
+          return { ...base, inventory: { ironPlate: 0, copperPlate: 0, output: [] }, progress: 0 };
+        case "lab":
+          return { ...base, inventory: {}, progress: 0 };
+        default:
+          return base;
+      }
+    }
+
+    function removeBuilding(x, y) {
+      const tile = gameState.world[y][x];
+      if (!tile.building) return;
+      const building = gameState.buildings.get(tile.building);
+      gameState.buildings.delete(tile.building);
+      tile.building = null;
+      updateTile(x, y);
+      logEvent(`${buildingCatalog[building.type].name} 已拆除。`);
+    }
+
+    function canAfford(cost) {
+      return Object.entries(cost).every(([key, value]) => (gameState.resources[key] ?? 0) >= value);
+    }
+
+    function spendResources(cost) {
+      Object.entries(cost).forEach(([key, value]) => {
+        gameState.resources[key] -= value;
+      });
+      updateResources();
+    }
+
+    function gainResource(key, amount) {
+      gameState.resources[key] = (gameState.resources[key] ?? 0) + amount;
+    }
+
+    function updateResources() {
+      const container = document.getElementById("resource-display");
+      container.innerHTML = "";
+      Object.entries(resourceMeta).forEach(([key, meta]) => {
+        const card = document.createElement("div");
+        card.className = "resource-card";
+        card.innerHTML = `<div class="resource-title"><span>${meta.name}</span></div><div class="resource-value">${Math.floor(gameState.resources[key] ?? 0)}</div>`;
+        container.appendChild(card);
+      });
+    }
+
+    function clearLog() {
+      const log = document.getElementById("log");
+      log.innerHTML = "";
+      log.scrollTop = 0;
+      logStickToBottom = true;
+      toggleLatestBadge(false);
+    }
+
+    function logEvent(message, isWarning = false) {
+      const log = document.getElementById("log");
+      const entry = document.createElement("div");
+      entry.textContent = message;
+      if (isWarning) entry.style.color = varDanger();
+      log.appendChild(entry);
+      if (logStickToBottom) {
+        log.scrollTop = log.scrollHeight;
+      } else {
+        toggleLatestBadge(true);
+      }
+    }
+
+    function toggleLatestBadge(visible) {
+      const btn = document.getElementById("log-latest");
+      if (!btn) return;
+      btn.classList.toggle("visible", visible);
+    }
+
+    function initLogScrollTracking() {
+      const log = document.getElementById("log");
+      const latestBtn = document.getElementById("log-latest");
+      if (!log || !latestBtn) return;
+      const updateStick = () => {
+        const nearBottom = log.scrollHeight - (log.scrollTop + log.clientHeight) <= 4;
+        logStickToBottom = nearBottom;
+        if (nearBottom) {
+          toggleLatestBadge(false);
+        } else if (log.children.length > 0) {
+          toggleLatestBadge(true);
+        }
+      };
+      log.addEventListener("scroll", updateStick);
+      log.addEventListener("wheel", updateStick, { passive: true });
+      latestBtn.addEventListener("click", () => {
+        logStickToBottom = true;
+        log.scrollTop = log.scrollHeight;
+        toggleLatestBadge(false);
+      });
+      toggleLatestBadge(false);
+    }
+
+    function varDanger() {
+      return getComputedStyle(document.documentElement).getPropertyValue("--danger");
+    }
+
+    function updateToolDisplay() {
+      const label = document.getElementById("current-tool");
+      if (gameState.removing) {
+        label.textContent = "当前：拆除模式";
+        document.getElementById("toggle-remove").textContent = "拆除：开启";
+        return;
+      }
+      if (!gameState.selection) {
+        label.textContent = "当前：闲置";
+      } else {
+        const def = buildingCatalog[gameState.selection];
+        label.textContent = `当前：${def.name}（朝向${directions[gameState.rotation].name}）`;
+      }
+      document.getElementById("toggle-remove").textContent = "拆除：关闭";
+    }
+
+    function toggleRemove() {
+      gameState.removing = !gameState.removing;
+      if (gameState.removing) gameState.selection = null;
+      updateToolDisplay();
+      renderBuildMenu();
+    }
+
+    function rotate(delta) {
+      gameState.rotation = (gameState.rotation + delta + directions.length) % directions.length;
+      updateToolDisplay();
+    }
+
+    function tick() {
+      const order = Array.from(gameState.buildings.values());
+      order.forEach(building => {
+        switch (building.type) {
+          case "miner":
+            processMiner(building);
+            break;
+          case "belt":
+            processBelt(building);
+            break;
+          case "furnace":
+            processFurnace(building);
+            break;
+          case "inserter":
+            processInserter(building);
+            break;
+          case "assembler":
+            processAssembler(building);
+            break;
+          case "lab":
+            processLab(building);
+            break;
+        }
+      });
+      updateResources();
+      renderBuildMenu();
+      renderResearch();
+    }
+
+    function processMiner(building) {
+      building.cooldown -= 1;
+      if (building.cooldown > 0) return;
+      const tile = gameState.world[building.y][building.x];
+      const deposit = tile.deposit;
+      if (!deposit || (deposit !== "iron" && deposit !== "copper")) return;
+      const resourceKey = deposit === "iron" ? "ironOre" : "copperOre";
+      const target = getFrontTile(building);
+      if (tryInsertItem(target, resourceKey)) {
+        building.cooldown = 2;
+      } else {
+        building.cooldown = 1;
+      }
+    }
+
+    function processBelt(building) {
+      if (building.items.length === 0) return;
+      const item = building.items[0];
+      item.progress += 0.5;
+      if (item.progress >= 1) {
+        const target = getFrontTile(building);
+        if (tryInsertItem(target, item.type)) {
+          building.items.shift();
+        } else {
+          item.progress = 1;
+        }
+      }
+    }
+
+    function processFurnace(building) {
+      const inv = building.inventory;
+      const inputTile = getBackTile(building);
+      pullFromInput(building, inputTile, ["ironOre", "copperOre"], inv);
+      if (inv.ironOre > 0) {
+        building.progress += 0.5;
+        if (building.progress >= 2) {
+          inv.ironOre -= 1;
+          inv.output.push("ironPlate");
+          building.progress = 0;
+        }
+      } else if (inv.copperOre > 0) {
+        building.progress += 0.5;
+        if (building.progress >= 2) {
+          inv.copperOre -= 1;
+          inv.output.push("copperPlate");
+          building.progress = 0;
+        }
+      } else {
+        building.progress = 0;
+      }
+      if (inv.output.length > 0) {
+        const target = getFrontTile(building);
+        if (tryInsertItem(target, inv.output[0])) {
+          inv.output.shift();
+        }
+      }
+    }
+
+    function processAssembler(building) {
+      const inv = building.inventory;
+      const inputTile = getBackTile(building);
+      pullFromInput(building, inputTile, ["ironPlate", "copperPlate"], inv);
+      const hasIron = inv.ironPlate >= 1;
+      const hasCopper = inv.copperPlate >= 1;
+      if (hasIron && hasCopper) {
+        building.progress += 0.5;
+        if (building.progress >= 2) {
+          inv.ironPlate -= 1;
+          inv.copperPlate -= 1;
+          inv.output.push("sciencePack1");
+          building.progress = 0;
+        }
+      } else {
+        building.progress = 0;
+      }
+      if (inv.output.length > 0) {
+        const target = getFrontTile(building);
+        if (tryInsertItem(target, inv.output[0])) {
+          inv.output.shift();
+        }
+      }
+    }
+
+    function processInserter(building) {
+      if (building.cooldown > 0) {
+        building.cooldown -= 1;
+        return;
+      }
+      if (building.held) {
+        const target = getFrontTile(building);
+        if (tryInsertItem(target, building.held)) {
+          building.held = null;
+          building.cooldown = 1;
+        }
+        return;
+      }
+      const source = getBackTile(building);
+      const item = tryExtractItem(source);
+      if (item) {
+        building.held = item;
+        building.cooldown = 1;
+      }
+    }
+
+    function processLab(building) {
+      const active = gameState.research.active;
+      if (!active) return;
+      const tech = techTree.find(t => t.id === active);
+      if (!tech) return;
+      const requirements = Object.keys(tech.cost);
+      const inputTile = getBackTile(building);
+      pullFromInput(building, inputTile, requirements, building.inventory);
+      for (const key of requirements) {
+        const stored = building.inventory[key] || 0;
+        if (stored > 0 && !isTechCompleted(active)) {
+          consumeResearchItem(active, key);
+          building.inventory[key] -= 1;
+          building.progress = 0;
+          break;
+        }
+      }
+    }
+
+    function pullFromInput(building, tile, keys, inventory) {
+      if (!tile) return;
+      const item = tryExtractItem(tile, keys);
+      if (item) {
+        inventory[item] = (inventory[item] || 0) + 1;
+      }
+    }
+
+    function tryInsertItem(tile, item) {
+      if (!tile) {
+        gainResource(item, 1);
+        return true;
+      }
+      const data = gameState.world[tile.y][tile.x];
+      if (!data.building) {
+        gainResource(item, 1);
+        updateTile(tile.x, tile.y);
+        return true;
+      }
+      const building = gameState.buildings.get(data.building);
+      switch (building.type) {
+        case "belt":
+          if (building.items.length === 0) {
+            building.items.push({ type: item, progress: 0 });
+            return true;
+          }
+          return false;
+        case "furnace":
+          if (item === "ironOre" || item === "copperOre") {
+            building.inventory[item] += 1;
+            return true;
+          }
+          return false;
+        case "assembler":
+          if (item === "ironPlate" || item === "copperPlate") {
+            building.inventory[item] += 1;
+            return true;
+          }
+          return false;
+        case "lab":
+          const active = gameState.research.active;
+          if (!active) return false;
+          const tech = techTree.find(t => t.id === active);
+          if (!tech || !tech.cost[item]) return false;
+          building.inventory[item] = (building.inventory[item] || 0) + 1;
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    function tryExtractItem(tile, filter = null) {
+      if (!tile) return null;
+      const data = gameState.world[tile.y][tile.x];
+      if (!data.building) return null;
+      const building = gameState.buildings.get(data.building);
+      switch (building.type) {
+        case "belt": {
+          if (building.items.length === 0) return null;
+          const item = building.items[0];
+          if (item.progress < 0.5) return null;
+          if (filter && !matchFilter(item.type, filter)) return null;
+          building.items.shift();
+          return item.type;
+        }
+        case "furnace": {
+          if (building.inventory.output.length === 0) return null;
+          const out = building.inventory.output[0];
+          if (filter && !matchFilter(out, filter)) return null;
+          building.inventory.output.shift();
+          return out;
+        }
+        case "assembler": {
+          if (building.inventory.output.length === 0) return null;
+          const out = building.inventory.output[0];
+          if (filter && !matchFilter(out, filter)) return null;
+          building.inventory.output.shift();
+          return out;
+        }
+        case "lab": {
+          const keys = Object.keys(building.inventory);
+          for (const key of keys) {
+            if (building.inventory[key] > 0 && (!filter || matchFilter(key, filter))) {
+              building.inventory[key] -= 1;
+              return key;
+            }
+          }
+          return null;
+        }
+        default:
+          return null;
+      }
+    }
+
+    function matchFilter(item, filter) {
+      if (!filter) return true;
+      if (Array.isArray(filter)) return filter.includes(item);
+      return item === filter;
+    }
+
+    function getFrontTile(building) {
+      const dir = directions[building.rotation];
+      const nx = building.x + dir.dx;
+      const ny = building.y + dir.dy;
+      if (nx < 0 || ny < 0 || nx >= WORLD_SIZE || ny >= WORLD_SIZE) return null;
+      return { x: nx, y: ny };
+    }
+
+    function getBackTile(building) {
+      const dir = directions[(building.rotation + 2) % directions.length];
+      const nx = building.x + dir.dx;
+      const ny = building.y + dir.dy;
+      if (nx < 0 || ny < 0 || nx >= WORLD_SIZE || ny >= WORLD_SIZE) return null;
+      return { x: nx, y: ny };
+    }
+
+    function renderResearch() {
+      const container = document.getElementById("research-list");
+      container.innerHTML = "";
+      techTree.forEach(tech => {
+        const card = document.createElement("div");
+        card.className = "tech";
+        if (gameState.research.active === tech.id) card.classList.add("active");
+        if (isTechCompleted(tech.id)) card.classList.add("completed");
+        card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;"><strong>${tech.name}</strong><span>${tech.description}</span></div>`;
+        const progress = gameState.research.progress[tech.id] || {};
+        const list = document.createElement("div");
+        list.className = "hint";
+        list.textContent = Object.entries(tech.cost)
+          .map(([key, amount]) => {
+            const have = progress[key] || 0;
+            return `${resourceMeta[key].name} ${have}/${amount}`;
+          })
+          .join("，");
+        card.appendChild(list);
+        const bar = document.createElement("div");
+        bar.className = "progress-bar";
+        const percent = getTechPercent(tech);
+        bar.innerHTML = `<span style="width:${percent * 100}%"></span>`;
+        card.appendChild(bar);
+        if (!isTechCompleted(tech.id)) {
+          const prereqMet = !tech.requires || tech.requires.every(id => isTechCompleted(id));
+          if (prereqMet) {
+            const btn = document.createElement("button");
+            btn.textContent = gameState.research.active === tech.id ? "研究中" : "设为研究";
+            btn.addEventListener("click", () => {
+              gameState.research.active = tech.id;
+              logEvent(`已选择研究：${tech.name}`);
+              renderResearch();
+            });
+            card.appendChild(btn);
+          } else {
+            const lock = document.createElement("div");
+            lock.className = "hint";
+            lock.textContent = "需要先完成前置研究";
+            card.appendChild(lock);
+          }
+        }
+        container.appendChild(card);
+      });
+    }
+
+    function consumeResearchItem(techId, item) {
+      const tech = techTree.find(t => t.id === techId);
+      if (!tech) return;
+      const target = tech.cost[item];
+      if (!target) return;
+      const progress = gameState.research.progress[techId] || (gameState.research.progress[techId] = {});
+      progress[item] = (progress[item] || 0) + 1;
+      if (progress[item] >= target) {
+        const allMet = Object.entries(tech.cost).every(([key, amount]) => (progress[key] || 0) >= amount);
+        if (allMet && !isTechCompleted(techId)) {
+          gameState.research.completed.add(techId);
+          tech.unlocks(gameState);
+        }
+      }
+    }
+
+    function isTechCompleted(id) {
+      return gameState.research.completed.has(id);
+    }
+
+    function getTechPercent(tech) {
+      const progress = gameState.research.progress[tech.id] || {};
+      const total = Object.values(tech.cost).reduce((a, b) => a + b, 0);
+      const done = Object.entries(tech.cost).reduce((acc, [key, amount]) => acc + Math.min(progress[key] || 0, amount), 0);
+      return total === 0 ? 0 : done / total;
+    }
+
+    document.getElementById("rotate-left").addEventListener("click", () => rotate(-1));
+    document.getElementById("rotate-right").addEventListener("click", () => rotate(1));
+    document.getElementById("toggle-remove").addEventListener("click", () => toggleRemove());
+    document.getElementById("reset").addEventListener("click", () => resetState());
+
+    initLogScrollTracking();
+
+    window.addEventListener("keydown", e => {
+      if (e.key === "q" || e.key === "Q") rotate(-1);
+      if (e.key === "e" || e.key === "E") rotate(1);
+      if (e.key === "Escape") {
+        gameState.selection = null;
+        gameState.removing = false;
+        updateToolDisplay();
+        renderBuildMenu();
+      }
+    });
+
+    resetState();
+    setInterval(tick, TICK_MS);
+  </script>
+</body>
+</html>
