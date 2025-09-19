@@ -7,81 +7,76 @@
   <style>
     :root {
       color-scheme: dark;
-      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
-      --bg: #070b14;
-      --panel: rgba(16, 24, 39, 0.92);
-      --accent: #3ec5ff;
-      --accent-strong: #00c2ff;
-      --grid-border: rgba(255, 255, 255, 0.08);
-      --text-soft: rgba(255, 255, 255, 0.76);
-      --text-strong: #ffffff;
-      --danger: #ff5555;
-      --good: #53ff9f;
+      --bg: #05070f;
+      --panel: rgba(12, 20, 35, 0.92);
+      --accent: #3fa9ff;
+      --accent-soft: rgba(63, 169, 255, 0.25);
+      --text: rgba(255, 255, 255, 0.82);
+      --text-soft: rgba(255, 255, 255, 0.58);
+      --danger: #ff5c5c;
+      font-family: "Segoe UI", "PingFang SC", system-ui, sans-serif;
     }
 
     body {
       margin: 0;
-      background: radial-gradient(circle at 10% 20%, rgba(36, 58, 105, 0.45) 0%, rgba(7, 11, 20, 0.95) 55%), var(--bg);
-      color: var(--text-soft);
+      background: radial-gradient(circle at 20% 15%, rgba(52, 77, 132, 0.28), rgba(5, 7, 15, 0.92)), var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
     header {
-      padding: 1.5rem clamp(1.5rem, 2vw, 3rem);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: linear-gradient(90deg, rgba(10, 15, 25, 0.9), rgba(25, 35, 57, 0.65));
+      padding: 1.25rem clamp(1.25rem, 2vw, 2.5rem);
+      background: linear-gradient(90deg, rgba(10, 15, 26, 0.92), rgba(24, 34, 58, 0.6));
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(18px);
       position: sticky;
       top: 0;
-      z-index: 10;
-      backdrop-filter: blur(12px);
+      z-index: 5;
     }
 
     header h1 {
       margin: 0;
-      font-weight: 600;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--text-strong);
+      font-weight: 600;
     }
 
     header span {
-      font-size: 0.95rem;
-      color: rgba(255, 255, 255, 0.55);
-      letter-spacing: 0.12em;
+      font-size: 0.9rem;
+      color: var(--text-soft);
+      letter-spacing: 0.08em;
     }
 
     main {
       flex: 1;
       display: grid;
-      grid-template-columns: minmax(260px, 22vw) 1fr minmax(260px, 24vw);
+      grid-template-columns: minmax(260px, 23vw) minmax(520px, 1fr) minmax(280px, 24vw);
       gap: 1.25rem;
-      padding: clamp(1rem, 1.5vw, 2rem);
+      padding: clamp(1rem, 1.6vw, 2rem);
     }
 
     .panel {
       background: var(--panel);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
       padding: 1.2rem;
-      backdrop-filter: blur(14px);
-      box-shadow: 0 18px 30px rgba(2, 10, 35, 0.35);
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      max-height: calc(100vh - 120px);
-      overflow: auto;
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(18px);
+      max-height: calc(100vh - 130px);
     }
 
-    .panel h2 {
+    h2 {
       margin: 0;
-      font-size: 1.1rem;
+      font-size: 1rem;
       letter-spacing: 0.08em;
-      color: var(--text-strong);
       text-transform: uppercase;
     }
 
@@ -92,12 +87,12 @@
     }
 
     .resource-card {
-      padding: 0.75rem;
-      border-radius: 10px;
       background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 0.75rem;
       display: flex;
       flex-direction: column;
-      gap: 0.3rem;
+      gap: 0.35rem;
     }
 
     .resource-title {
@@ -105,117 +100,88 @@
       justify-content: space-between;
       align-items: center;
       font-weight: 600;
-      color: var(--text-strong);
     }
 
     .resource-value {
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       font-weight: 600;
     }
 
-    .resource-delta {
-      font-size: 0.8rem;
-      color: rgba(255, 255, 255, 0.55);
+    #world-wrapper {
+      flex: 1;
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: rgba(0, 0, 0, 0.18);
+      position: relative;
     }
 
-    #map-container {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    #map-grid {
+    #world-grid {
       display: grid;
-      grid-template-columns: repeat(16, 1fr);
-      grid-template-rows: repeat(16, 1fr);
+      grid-template-columns: repeat(var(--size), 36px);
+      grid-template-rows: repeat(var(--size), 36px);
       gap: 2px;
-      background: rgba(255, 255, 255, 0.04);
-      border-radius: 12px;
-      padding: 0.75rem;
-      aspect-ratio: 1;
+      padding: 1rem;
+      width: fit-content;
+      margin: 0 auto;
     }
 
     .tile {
-      position: relative;
-      background: rgba(6, 10, 20, 0.85);
-      border: 1px solid var(--grid-border);
-      border-radius: 6px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(8, 12, 20, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.04);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.85rem;
-      font-weight: 600;
+      font-size: 0.75rem;
       cursor: pointer;
-      transition: transform 120ms ease, border-color 120ms ease;
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+      position: relative;
     }
 
     .tile:hover {
       transform: translateY(-2px);
-      border-color: rgba(62, 197, 255, 0.8);
-      box-shadow: 0 10px 14px rgba(0, 15, 35, 0.45);
+      border-color: var(--accent);
+      box-shadow: 0 10px 22px rgba(5, 25, 45, 0.42);
     }
 
-    .tile.deposit-iron {
-      background: linear-gradient(145deg, rgba(70, 110, 200, 0.55), rgba(3, 15, 30, 0.85));
-      border-color: rgba(114, 170, 255, 0.8);
-    }
-
-    .tile.deposit-copper {
-      background: linear-gradient(145deg, rgba(214, 134, 68, 0.55), rgba(50, 22, 8, 0.85));
-      border-color: rgba(255, 180, 110, 0.8);
-    }
-
-    .tile.deposit-silicon {
-      background: linear-gradient(145deg, rgba(72, 216, 180, 0.45), rgba(12, 42, 34, 0.85));
-      border-color: rgba(90, 250, 210, 0.75);
-    }
+    .tile.deposit-iron { background: linear-gradient(135deg, rgba(84, 122, 216, 0.55), rgba(20, 32, 56, 0.92)); }
+    .tile.deposit-copper { background: linear-gradient(135deg, rgba(214, 140, 76, 0.58), rgba(48, 26, 6, 0.9)); }
+    .tile.deposit-stone { background: linear-gradient(135deg, rgba(129, 134, 154, 0.55), rgba(22, 24, 30, 0.9)); }
 
     .tile.building {
-      background: rgba(0, 132, 255, 0.12);
-      border-color: rgba(62, 197, 255, 0.65);
+      border-color: rgba(63, 169, 255, 0.6);
+      background: rgba(63, 169, 255, 0.14);
     }
 
-    .tile .label {
+    .tile .icon {
       pointer-events: none;
     }
 
-    #build-menu {
-      display: grid;
-      gap: 0.75rem;
+    .selection-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
 
     .build-button {
+      flex: 1 1 46%;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.85rem 1rem;
-      border-radius: 10px;
+      flex-direction: column;
+      gap: 0.35rem;
       border: 1px solid rgba(255, 255, 255, 0.05);
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--text-strong);
-      font-weight: 600;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.7rem 0.9rem;
+      border-radius: 12px;
       cursor: pointer;
-      transition: transform 120ms ease, background 120ms ease;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
     }
 
-    .build-button:hover,
     .build-button.active {
-      transform: translateY(-2px);
-      background: rgba(62, 197, 255, 0.18);
-      border-color: rgba(62, 197, 255, 0.4);
-      box-shadow: 0 12px 18px rgba(12, 40, 60, 0.35);
-    }
-
-    .build-button .cost {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.6);
-      margin-top: 0.35rem;
-    }
-
-    .build-button .summary {
-      font-size: 0.8rem;
-      color: rgba(255, 255, 255, 0.75);
-      margin-top: 0.35rem;
+      border-color: var(--accent);
+      background: var(--accent-soft);
     }
 
     .build-button.locked {
@@ -223,677 +189,916 @@
       pointer-events: none;
     }
 
+    .build-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(63, 169, 255, 0.45);
+      background: rgba(63, 169, 255, 0.1);
+    }
+
+    .build-button .name {
+      font-weight: 600;
+    }
+
+    .build-button .cost {
+      font-size: 0.75rem;
+      color: var(--text-soft);
+    }
+
     #log {
       flex: 1;
-      padding: 0.75rem 1rem;
+      overflow: auto;
+      padding: 0.85rem;
+      border-radius: 12px;
       background: rgba(255, 255, 255, 0.03);
-      border-radius: 10px;
-      font-size: 0.8rem;
-      line-height: 1.55;
-      overflow-y: auto;
-      max-height: 280px;
+      font-size: 0.78rem;
+      line-height: 1.6;
     }
 
-    #log div {
-      padding: 0.35rem 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    #log div + div {
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 0.5rem;
+      margin-top: 0.5rem;
     }
 
-    #log div:last-child {
-      border-bottom: none;
-    }
-
-    #tech-tree {
+    #research-list {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.6rem;
     }
 
     .tech {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
       padding: 0.8rem 1rem;
-      border-radius: 10px;
       background: rgba(255, 255, 255, 0.04);
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      flex-direction: column;
+      gap: 0.4rem;
     }
 
-    .tech.locked {
-      opacity: 0.45;
+    .tech button {
+      align-self: flex-start;
+      border: none;
+      background: rgba(63, 169, 255, 0.16);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
     }
 
-    .tech .progress {
-      margin-top: 0.35rem;
+    .tech.completed {
+      border-color: rgba(126, 232, 159, 0.55);
+      background: rgba(50, 112, 72, 0.22);
+    }
+
+    .tech.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(63, 169, 255, 0.24);
+    }
+
+    .progress-bar {
       width: 100%;
       height: 6px;
-      background: rgba(255, 255, 255, 0.1);
       border-radius: 999px;
       overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
     }
 
-    .tech .progress span {
+    .progress-bar span {
       display: block;
       height: 100%;
-      background: linear-gradient(90deg, rgba(62, 197, 255, 0.8), rgba(128, 90, 255, 0.9));
+      background: linear-gradient(90deg, rgba(63, 169, 255, 0.85), rgba(126, 232, 159, 0.9));
     }
 
-    .flex-between {
+    #selection-info {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--text-soft);
+    }
+
+    #selection-info button {
+      border: none;
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text);
+      padding: 0.35rem 0.6rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #world-wrapper::-webkit-scrollbar,
+    #log::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #world-wrapper::-webkit-scrollbar-thumb,
+    #log::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
     }
 
     .hint {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.55);
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      line-height: 1.6;
     }
 
-    @media (max-width: 1100px) {
+    @media (max-width: 1200px) {
       main {
         grid-template-columns: 1fr;
       }
 
-      #map-container {
-        order: -1;
+      .panel {
+        max-height: unset;
       }
-    }
-
-    button.reset {
-      border: none;
-      background: rgba(255, 85, 85, 0.12);
-      color: var(--danger);
-      padding: 0.5rem 0.85rem;
-      border-radius: 8px;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>恒星锻造</h1>
-    <span>星际级自动化建造原型</span>
+    <span>戴森球计划式自动化建造试验场</span>
   </header>
   <main>
     <section class="panel" id="left-panel">
-      <div class="flex-between">
-        <h2>资源状况</h2>
-        <button class="reset" id="reset-game">重启殖民地</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+        <h2>资源仓储</h2>
+        <button id="reset" style="border:none;background:rgba(255,92,92,0.14);color:var(--danger);padding:0.4rem 0.75rem;border-radius:8px;cursor:pointer;">重启</button>
       </div>
       <div id="resource-display"></div>
+      <div class="hint">提示：使用 Q/E 或旋转按钮改变朝向，右键开启拆除模式。矿机需要建造在矿脉上并连接传送带，机械臂能在相邻建筑间传输物品。</div>
       <div>
-        <h2>电力</h2>
-        <div id="power-overview" class="resource-card">
-          <div class="resource-title">
-            <span>电力平衡</span>
-            <span id="power-balance">0</span>
-          </div>
-          <div class="resource-delta" id="power-detail"></div>
-        </div>
-      </div>
-      <div>
-        <h2>研究</h2>
-        <div id="tech-tree"></div>
+        <h2>研究进展</h2>
+        <div id="research-list"></div>
       </div>
     </section>
-
-    <section id="map-container">
-      <div class="panel" style="gap: 0.75rem;">
-        <h2>殖民地规划</h2>
-        <div class="hint">选择建筑后点击网格放置，右键或使用“拆除模式”移除建筑。</div>
-        <div id="map-grid"></div>
+    <section class="panel" id="center-panel" style="gap:0.75rem;">
+      <div id="selection-info">
+        <span id="current-tool">当前：闲置</span>
+        <button id="rotate-left">⟲</button>
+        <button id="rotate-right">⟳</button>
+        <button id="toggle-remove">拆除：关闭</button>
+      </div>
+      <div id="world-wrapper">
+        <div id="world-grid"></div>
       </div>
     </section>
-
     <section class="panel" id="right-panel">
       <div>
-        <h2>建造中枢</h2>
-        <div class="hint">建筑需消耗电力，确保发电满足需求。</div>
-        <div id="build-menu"></div>
+        <h2>建造清单</h2>
+        <div class="selection-bar" id="build-menu"></div>
       </div>
       <div>
-        <h2>殖民地事件</h2>
+        <h2>殖民记要</h2>
         <div id="log"></div>
       </div>
     </section>
   </main>
   <script>
-    const MAP_SIZE = 16;
-    const TICK_INTERVAL = 1000; // ms
+    const WORLD_SIZE = 40;
+    const TICK_MS = 500;
+    const directions = [
+      { dx: 0, dy: -1, name: "上" },
+      { dx: 1, dy: 0, name: "右" },
+      { dx: 0, dy: 1, name: "下" },
+      { dx: -1, dy: 0, name: "左" },
+    ];
 
-    const tileTypes = ["empty", "iron", "copper", "silicon"];
+    const initialResources = {
+      ironOre: 40,
+      copperOre: 40,
+      ironPlate: 20,
+      copperPlate: 20,
+      gear: 0,
+      circuit: 0,
+      sciencePack1: 0,
+    };
+
+    const resourceMeta = {
+      ironOre: { name: "铁矿石" },
+      copperOre: { name: "铜矿石" },
+      ironPlate: { name: "铁板" },
+      copperPlate: { name: "铜板" },
+      gear: { name: "齿轮" },
+      circuit: { name: "电路板" },
+      sciencePack1: { name: "科技包" },
+    };
 
     const buildingCatalog = {
       miner: {
+        id: "miner",
         name: "行星采矿机",
-        description: "部署在矿脉上，将矿石转化为原料。",
-        cost: { ironIngot: 5, circuit: 1 },
-        power: -4,
+        icon: "⛏",
+        cost: { ironPlate: 6, copperPlate: 4 },
+        description: "部署在矿脉上提取矿石，向前方输出矿石。",
         requires: () => true,
-        placementRule: tile => tile.deposit !== null,
-        outputs: tile => ({ [`${tile.deposit}Ore`]: 1 }),
+        placement: tile => tile.deposit && !tile.building,
       },
-      smelter: {
-        name: "量子熔炉",
-        description: "消耗矿石，持续产出金属锭。",
-        cost: { ironOre: 6, copperOre: 6 },
-        power: -6,
-        requires: state => state.tech.unlocks.smelter,
-        placementRule: tile => !tile.deposit,
-        inputs: { ironOre: 2, copperOre: 0 },
-        outputs: () => ({ ironIngot: 1, copperIngot: 1 }),
-      },
-      foundry: {
-        name: "重构冶炼厂",
-        description: "将高阶锭加工为电路板。",
-        cost: { ironIngot: 8, copperIngot: 6 },
-        power: -8,
-        requires: state => state.tech.unlocks.foundry,
-        placementRule: tile => !tile.deposit,
-        inputs: { ironIngot: 2, copperIngot: 2 },
-        outputs: () => ({ circuit: 1 }),
-      },
-      lab: {
-        name: "星际研究站",
-        description: "消耗电路，推进科技发展。",
-        cost: { circuit: 4, ironIngot: 4 },
-        power: -6,
-        requires: state => state.tech.unlocks.lab,
-        placementRule: tile => !tile.deposit,
-        inputs: { circuit: 2 },
-        outputs: () => ({ science: 1 }),
-      },
-      solar: {
-        name: "轨道光伏",
-        description: "提供稳定电力，保障设施运行。",
-        cost: { ironIngot: 3, copperIngot: 3 },
-        power: 12,
+      belt: {
+        id: "belt",
+        name: "传送带",
+        icon: "⇄",
+        cost: { ironPlate: 1 },
+        description: "沿着方向运输物品，最多容纳一件物品。",
         requires: () => true,
-        placementRule: tile => !tile.deposit,
+        placement: tile => !tile.deposit && !tile.building,
       },
-      storage: {
-        name: "星际仓储",
-        description: "提升资源容量，避免溢出。",
-        cost: { ironIngot: 4 },
-        power: -1,
-        requires: state => state.tech.unlocks.storage,
-        placementRule: tile => !tile.deposit,
-        effects: state => {
-          state.capacityBonus += 50;
-        },
+      furnace: {
+        id: "furnace",
+        name: "熔炉",
+        icon: "♨",
+        cost: { ironPlate: 8 },
+        description: "消耗矿石冶炼为金属板。",
+        requires: state => state.research.unlocks.furnace,
+        placement: tile => !tile.deposit && !tile.building,
+      },
+      inserter: {
+        id: "inserter",
+        name: "机械臂",
+        icon: "🤖",
+        cost: { ironPlate: 2, copperPlate: 2 },
+        description: "从后方取物并放入前方建筑或传送带。",
+        requires: state => state.research.unlocks.inserter,
+        placement: tile => !tile.building,
       },
       assembler: {
-        name: "纳米装配厂",
-        description: "将金属锭转化为高级组件。",
-        cost: { ironIngot: 10, circuit: 4 },
-        power: -10,
-        requires: state => state.tech.unlocks.assembler,
-        placementRule: tile => !tile.deposit,
-        inputs: { ironIngot: 3, copperIngot: 2 },
-        outputs: () => ({ framework: 1 }),
+        id: "assembler",
+        name: "自动工作台",
+        icon: "⚙",
+        cost: { ironPlate: 8, copperPlate: 6 },
+        description: "消耗材料合成科技包。",
+        requires: state => state.research.unlocks.assembler,
+        placement: tile => !tile.deposit && !tile.building,
+      },
+      lab: {
+        id: "lab",
+        name: "研究中心",
+        icon: "🔬",
+        cost: { ironPlate: 6, copperPlate: 6 },
+        description: "消耗指定物品推进研究进度。",
+        requires: () => true,
+        placement: tile => !tile.deposit && !tile.building,
       },
     };
 
-    const techCatalog = [
+    const techTree = [
+      {
+        id: "automation",
+        name: "基础自动化",
+        description: "解锁熔炉、机械臂与自动工作台。",
+        cost: { ironPlate: 20, copperPlate: 15 },
+        unlocks: state => {
+          state.research.unlocks.furnace = true;
+          state.research.unlocks.inserter = true;
+          state.research.unlocks.assembler = true;
+          logEvent("基础自动化完成，自动化核心建筑现已可用。");
+        },
+      },
       {
         id: "logistics",
-        name: "自动化物流",
-        description: "解锁量子熔炉与仓储设施。",
-        cost: 10,
-        unlocks: { smelter: true, storage: true },
-      },
-      {
-        id: "electronics",
-        name: "高效电子",
-        description: "解锁重构冶炼厂。",
-        cost: 25,
-        unlocks: { foundry: true },
-      },
-      {
-        id: "research",
-        name: "深空研究",
-        description: "解锁星际研究站。",
-        cost: 40,
-        unlocks: { lab: true },
-      },
-      {
-        id: "nanotech",
-        name: "纳米制造",
-        description: "解锁纳米装配厂。",
-        cost: 70,
-        unlocks: { assembler: true },
+        name: "输送网络",
+        description: "研究需要科技包，用于进一步扩展殖民地。",
+        requires: ["automation"],
+        cost: { sciencePack1: 12 },
+        unlocks: state => {
+          logEvent("输送网络完成，高级物流即将到来（占位）。");
+        },
       },
     ];
 
-    const initialState = () => ({
-      tick: 0,
-      resources: {
-        ironOre: 20,
-        copperOre: 20,
-        siliconOre: 0,
-        ironIngot: 15,
-        copperIngot: 10,
-        circuit: 2,
-        science: 0,
-        framework: 0,
+    const gameState = {
+      world: [],
+      buildings: new Map(),
+      resources: {},
+      nextBuildingId: 1,
+      selection: null,
+      rotation: 1,
+      removing: false,
+      research: {
+        active: null,
+        progress: {},
+        unlocks: {
+          furnace: false,
+          inserter: false,
+          assembler: false,
+        },
+        completed: new Set(),
       },
-      capacity: 100,
-      capacityBonus: 0,
-      map: [],
-      selectedBuilding: null,
-      buildMode: "build",
-      power: { production: 0, consumption: 0 },
-      buildings: [],
-      tech: {
-        unlocks: { smelter: false, foundry: false, storage: false, lab: false, assembler: false },
-        progress: techCatalog.reduce((acc, tech) => ({ ...acc, [tech.id]: 0 }), {}),
-      },
-      log: [],
-    });
-
-    let state = initialState();
-
-    const el = {
-      mapGrid: document.getElementById("map-grid"),
-      buildMenu: document.getElementById("build-menu"),
-      resourceDisplay: document.getElementById("resource-display"),
-      log: document.getElementById("log"),
-      techTree: document.getElementById("tech-tree"),
-      powerBalance: document.getElementById("power-balance"),
-      powerDetail: document.getElementById("power-detail"),
-      resetGame: document.getElementById("reset-game"),
     };
 
-    function addLog(message) {
-      const time = new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      state.log.push(`[${time}] ${message}`);
-      state.log = state.log.slice(-60);
-      renderLog();
+    function resetState() {
+      gameState.world = generateWorld();
+      gameState.buildings = new Map();
+      gameState.resources = JSON.parse(JSON.stringify(initialResources));
+      gameState.nextBuildingId = 1;
+      gameState.selection = null;
+      gameState.rotation = 1;
+      gameState.removing = false;
+      gameState.research = {
+        active: null,
+        progress: {},
+        unlocks: { furnace: false, inserter: false, assembler: false },
+        completed: new Set(),
+      };
+      renderWorld();
+      updateResources();
+      renderBuildMenu();
+      renderResearch();
+      updateToolDisplay();
+      clearLog();
+      logEvent("殖民地初始化完成，矿脉生成于辽阔平原。");
     }
 
-    function renderLog() {
-      el.log.innerHTML = state.log.map(entry => `<div>${entry}</div>`).join("");
-      el.log.scrollTop = el.log.scrollHeight;
-    }
-
-    function initMap() {
-      state.map = [];
-      for (let y = 0; y < MAP_SIZE; y++) {
+    function generateWorld() {
+      const world = [];
+      for (let y = 0; y < WORLD_SIZE; y++) {
         const row = [];
-        for (let x = 0; x < MAP_SIZE; x++) {
-          const roll = Math.random();
-          let deposit = null;
-          if (roll < 0.12) deposit = "iron";
-          else if (roll < 0.22) deposit = "copper";
-          else if (roll < 0.26) deposit = "silicon";
-          row.push({ x, y, deposit, building: null });
+        for (let x = 0; x < WORLD_SIZE; x++) {
+          row.push({ deposit: null, building: null });
         }
-        state.map.push(row);
+        world.push(row);
+      }
+      generateDeposits(world, "iron", 6, 14);
+      generateDeposits(world, "copper", 6, 14);
+      generateDeposits(world, "stone", 4, 10);
+      return world;
+    }
+
+    function generateDeposits(world, type, clusters, radius) {
+      for (let i = 0; i < clusters; i++) {
+        const cx = Math.floor(Math.random() * WORLD_SIZE);
+        const cy = Math.floor(Math.random() * WORLD_SIZE);
+        const size = Math.floor(Math.random() * 4) + 4;
+        for (let j = 0; j < size; j++) {
+          const angle = Math.random() * Math.PI * 2;
+          const dist = Math.random() * (radius / 4);
+          const x = Math.max(0, Math.min(WORLD_SIZE - 1, Math.round(cx + Math.cos(angle) * dist)));
+          const y = Math.max(0, Math.min(WORLD_SIZE - 1, Math.round(cy + Math.sin(angle) * dist)));
+          world[y][x].deposit = type;
+        }
       }
     }
 
-    function renderMap() {
-      el.mapGrid.innerHTML = "";
-      for (const row of state.map) {
-        for (const tile of row) {
-          const tileEl = document.createElement("div");
-          tileEl.className = "tile";
-          if (tile.deposit) tileEl.classList.add(`deposit-${tile.deposit}`);
-          if (tile.building) tileEl.classList.add("building");
-          const label = document.createElement("div");
-          label.className = "label";
-          if (tile.building) {
-            label.textContent = buildingCatalog[tile.building.type].name.split("")[0];
-          } else if (tile.deposit) {
-            const map = { iron: "铁", copper: "铜", silicon: "硅" };
-            label.textContent = map[tile.deposit];
+    function renderWorld() {
+      const wrapper = document.getElementById("world-grid");
+      wrapper.style.setProperty("--size", WORLD_SIZE);
+      wrapper.innerHTML = "";
+      for (let y = 0; y < WORLD_SIZE; y++) {
+        for (let x = 0; x < WORLD_SIZE; x++) {
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          const data = gameState.world[y][x];
+          if (data.deposit) {
+            tile.classList.add(`deposit-${data.deposit}`);
           }
-          tileEl.appendChild(label);
-          tileEl.title = describeTile(tile);
-          tileEl.addEventListener("click", evt => {
-            evt.preventDefault();
-            handleTileClick(tile);
+          if (data.building) {
+            tile.classList.add("building");
+            const building = gameState.buildings.get(data.building);
+            tile.innerHTML = `<span class="icon">${buildingCatalog[building.type].icon}</span>`;
+          }
+          tile.addEventListener("click", () => onTileClick(x, y));
+          tile.addEventListener("contextmenu", e => {
+            e.preventDefault();
+            toggleRemove();
           });
-          tileEl.addEventListener("contextmenu", evt => {
-            evt.preventDefault();
-            demolish(tile);
-          });
-          el.mapGrid.appendChild(tileEl);
+          wrapper.appendChild(tile);
         }
       }
     }
 
-    function describeTile(tile) {
-      const segments = [];
-      if (tile.deposit) {
-        const text = { iron: "铁矿脉", copper: "铜矿脉", silicon: "硅矿脉" }[tile.deposit];
-        segments.push(text);
-      } else {
-        segments.push("荒芜地表");
+    function updateTile(x, y) {
+      const idx = y * WORLD_SIZE + x;
+      const wrapper = document.getElementById("world-grid");
+      const tileEl = wrapper.children[idx];
+      const data = gameState.world[y][x];
+      tileEl.className = "tile";
+      tileEl.innerHTML = "";
+      if (data.deposit) tileEl.classList.add(`deposit-${data.deposit}`);
+      if (data.building) {
+        tileEl.classList.add("building");
+        const building = gameState.buildings.get(data.building);
+        tileEl.innerHTML = `<span class="icon">${buildingCatalog[building.type].icon}</span>`;
       }
-      if (tile.building) {
-        segments.push(`建筑：${buildingCatalog[tile.building.type].name}`);
-      }
-      return segments.join(" | ");
-    }
-
-    function canAfford(cost) {
-      return Object.entries(cost || {}).every(([resource, amount]) => (state.resources[resource] || 0) >= amount);
-    }
-
-    function payCost(cost) {
-      for (const [resource, amount] of Object.entries(cost || {})) {
-        state.resources[resource] -= amount;
-      }
-    }
-
-    function handleTileClick(tile) {
-      if (!state.selectedBuilding) return;
-      if (tile.building) {
-        addLog("该地块已有建筑，先拆除。");
-        return;
-      }
-      const blueprint = buildingCatalog[state.selectedBuilding];
-      if (!blueprint) return;
-      if (!blueprint.placementRule(tile)) {
-        addLog("地形不满足该建筑需求。");
-        return;
-      }
-      if (!canAfford(blueprint.cost)) {
-        addLog("资源不足，无法建造。");
-        return;
-      }
-      payCost(blueprint.cost);
-      tile.building = { type: state.selectedBuilding, progress: 0 };
-      state.buildings.push({ tile, type: state.selectedBuilding, active: true });
-      if (blueprint.effects) blueprint.effects(state);
-      addLog(`${blueprint.name} 已建成。`);
-      recomputePower();
-      render();
-    }
-
-    function demolish(tile) {
-      if (!tile.building) return;
-      const blueprint = buildingCatalog[tile.building.type];
-      state.buildings = state.buildings.filter(b => b.tile !== tile);
-      tile.building = null;
-      if (blueprint.effects) {
-        state.capacityBonus = Math.max(0, state.capacityBonus - 50);
-      }
-      addLog(`${blueprint.name} 已拆除。`);
-      recomputePower();
-      render();
     }
 
     function renderBuildMenu() {
-      el.buildMenu.innerHTML = "";
-      Object.entries(buildingCatalog).forEach(([id, blueprint]) => {
-        const button = document.createElement("button");
-        button.className = "build-button";
-        if (!blueprint.requires(state)) button.classList.add("locked");
-        if (state.selectedBuilding === id) button.classList.add("active");
-        button.innerHTML = `
-          <div>
-            <div>${blueprint.name}</div>
-            <div class="summary">${blueprint.description}</div>
-            <div class="cost">成本：$${formatCost(blueprint.cost)}</div>
-          </div>
-        `;
-        button.addEventListener("click", () => {
-          if (!blueprint.requires(state)) return;
-          state.selectedBuilding = state.selectedBuilding === id ? null : id;
+      const menu = document.getElementById("build-menu");
+      menu.innerHTML = "";
+      Object.values(buildingCatalog).forEach(def => {
+        const btn = document.createElement("button");
+        btn.className = "build-button";
+        const locked = !def.requires(gameState);
+        if (locked) btn.classList.add("locked");
+        if (gameState.selection === def.id) btn.classList.add("active");
+        btn.innerHTML = `<span class="name">${def.icon} ${def.name}</span><span class="cost">${formatCost(def.cost)}</span><span class="hint">${def.description}</span>`;
+        btn.addEventListener("click", () => {
+          if (locked) return;
+          gameState.selection = def.id;
+          gameState.removing = false;
+          updateToolDisplay();
           renderBuildMenu();
         });
-        el.buildMenu.appendChild(button);
+        menu.appendChild(btn);
       });
-      const demolishButton = document.createElement("button");
-      demolishButton.className = "build-button";
-      demolishButton.textContent = state.buildMode === "demolish" ? "拆除模式：开启" : "拆除模式";
-      demolishButton.addEventListener("click", () => {
-        state.buildMode = state.buildMode === "demolish" ? "build" : "demolish";
-        renderBuildMenu();
-      });
-      el.buildMenu.appendChild(demolishButton);
     }
 
     function formatCost(cost) {
-      if (!cost || Object.keys(cost).length === 0) return "无";
-      return Object.entries(cost).map(([k, v]) => `${v} ${translateResource(k)}`).join("，");
+      return Object.entries(cost)
+        .map(([id, amount]) => `${resourceMeta[id].name}×${amount}`)
+        .join("、");
     }
 
-    function translateResource(resource) {
-      const map = {
-        ironOre: "铁矿石",
-        copperOre: "铜矿石",
-        siliconOre: "硅矿石",
-        ironIngot: "铁锭",
-        copperIngot: "铜锭",
-        circuit: "电路",
-        science: "科研数据",
-        framework: "框架",
-      };
-      return map[resource] || resource;
-    }
-
-    function renderResources() {
-      const capacity = state.capacity + state.capacityBonus;
-      el.resourceDisplay.innerHTML = Object.entries(state.resources)
-        .map(([key, value]) => {
-          const delta = resourceDelta[key] || 0;
-          const overCapacity = value >= capacity ? "⚠" : "";
-          return `
-            <div class="resource-card">
-              <div class="resource-title">
-                <span>${translateResource(key)}</span>
-                <span class="resource-value">${value.toFixed(0)}${overCapacity}</span>
-              </div>
-              <div class="resource-delta">${delta >= 0 ? "▲" : "▼"} ${(Math.abs(delta)).toFixed(2)}/秒</div>
-            </div>
-          `;
-        })
-        .join(" ");
-    }
-
-    function renderTechTree() {
-      el.techTree.innerHTML = techCatalog
-        .map(tech => {
-          const progress = state.tech.progress[tech.id] || 0;
-          const unlocked = Object.values(tech.unlocks).every(key => state.tech.unlocks[key]);
-          const canResearch = state.resources.science >= tech.cost && !unlocked;
-          return `
-            <div class="tech ${unlocked ? "" : "locked"}">
-              <div style="flex: 1;">
-                <div class="flex-between">
-                  <strong>${tech.name}</strong>
-                  <span>${unlocked ? "已解锁" : `${progress}/${tech.cost}`}</span>
-                </div>
-                <div class="hint">${tech.description}</div>
-                <div class="progress"><span style="width: ${(progress / tech.cost) * 100}%"></span></div>
-              </div>
-              <button ${canResearch ? "" : "disabled"} data-tech="${tech.id}">
-                ${unlocked ? "完成" : "研究"}
-              </button>
-            </div>
-          `;
-        })
-        .join("");
-      el.techTree.querySelectorAll("button[data-tech]").forEach(button => {
-        button.addEventListener("click", () => research(button.dataset.tech));
-      });
-    }
-
-    function research(id) {
-      const tech = techCatalog.find(t => t.id === id);
-      if (!tech) return;
-      const progress = state.tech.progress[id];
-      if (progress >= tech.cost) return;
-      if (state.resources.science < tech.cost) {
-        addLog("科研数据不足，无法研究。");
+    function onTileClick(x, y) {
+      if (gameState.removing) {
+        removeBuilding(x, y);
         return;
       }
-      state.resources.science -= tech.cost;
-      state.tech.progress[id] = tech.cost;
-      Object.entries(tech.unlocks).forEach(([buildingId, value]) => {
-        if (value) state.tech.unlocks[buildingId] = true;
-      });
-      addLog(`${tech.name} 已完成，新的建筑选项可用！`);
-      render();
-    }
-
-    function recomputePower() {
-      let production = 0;
-      let consumption = 0;
-      for (const building of state.buildings) {
-        const blueprint = buildingCatalog[building.type];
-        if (!blueprint) continue;
-        if (blueprint.power > 0) production += blueprint.power;
-        if (blueprint.power < 0) consumption += Math.abs(blueprint.power);
+      if (!gameState.selection) return;
+      const def = buildingCatalog[gameState.selection];
+      const tile = gameState.world[y][x];
+      if (!def.placement(tile)) {
+        logEvent("无法在该地块建造，检查地形或现有建筑。");
+        return;
       }
-      state.power = { production, consumption };
+      if (!canAfford(def.cost)) {
+        logEvent("资源不足，无法建造。", true);
+        return;
+      }
+      spendResources(def.cost);
+      const id = gameState.nextBuildingId++;
+      const building = createBuilding(id, def.id, x, y, gameState.rotation);
+      gameState.buildings.set(id, building);
+      tile.building = id;
+      updateTile(x, y);
+      logEvent(`${def.name} 建造完成。`);
+      if (def.id === "lab" && !gameState.research.active) {
+        logEvent("点击左侧研究界面选择研究目标，让实验室投入运行。");
+      }
     }
 
-    const resourceDelta = {};
+    function createBuilding(id, type, x, y, rotation) {
+      const base = { id, type, x, y, rotation, items: [], inventory: {} };
+      switch (type) {
+        case "miner":
+          return { ...base, cooldown: 0 };
+        case "belt":
+          return { ...base, items: [] };
+        case "furnace":
+          return { ...base, inventory: { ironOre: 0, copperOre: 0, output: [] }, progress: 0 };
+        case "inserter":
+          return { ...base, held: null, cooldown: 0 };
+        case "assembler":
+          return { ...base, inventory: { ironPlate: 0, copperPlate: 0, output: [] }, progress: 0 };
+        case "lab":
+          return { ...base, inventory: {}, progress: 0 };
+        default:
+          return base;
+      }
+    }
+
+    function removeBuilding(x, y) {
+      const tile = gameState.world[y][x];
+      if (!tile.building) return;
+      const building = gameState.buildings.get(tile.building);
+      gameState.buildings.delete(tile.building);
+      tile.building = null;
+      updateTile(x, y);
+      logEvent(`${buildingCatalog[building.type].name} 已拆除。`);
+    }
+
+    function canAfford(cost) {
+      return Object.entries(cost).every(([key, value]) => (gameState.resources[key] ?? 0) >= value);
+    }
+
+    function spendResources(cost) {
+      Object.entries(cost).forEach(([key, value]) => {
+        gameState.resources[key] -= value;
+      });
+      updateResources();
+    }
+
+    function gainResource(key, amount) {
+      gameState.resources[key] = (gameState.resources[key] ?? 0) + amount;
+    }
+
+    function updateResources() {
+      const container = document.getElementById("resource-display");
+      container.innerHTML = "";
+      Object.entries(resourceMeta).forEach(([key, meta]) => {
+        const card = document.createElement("div");
+        card.className = "resource-card";
+        card.innerHTML = `<div class="resource-title"><span>${meta.name}</span></div><div class="resource-value">${Math.floor(gameState.resources[key] ?? 0)}</div>`;
+        container.appendChild(card);
+      });
+    }
+
+    function clearLog() {
+      document.getElementById("log").innerHTML = "";
+    }
+
+    function logEvent(message, isWarning = false) {
+      const log = document.getElementById("log");
+      const entry = document.createElement("div");
+      entry.textContent = message;
+      if (isWarning) entry.style.color = varDanger();
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function varDanger() {
+      return getComputedStyle(document.documentElement).getPropertyValue("--danger");
+    }
+
+    function updateToolDisplay() {
+      const label = document.getElementById("current-tool");
+      if (gameState.removing) {
+        label.textContent = "当前：拆除模式";
+        document.getElementById("toggle-remove").textContent = "拆除：开启";
+        return;
+      }
+      if (!gameState.selection) {
+        label.textContent = "当前：闲置";
+      } else {
+        const def = buildingCatalog[gameState.selection];
+        label.textContent = `当前：${def.name}（朝向${directions[gameState.rotation].name}）`;
+      }
+      document.getElementById("toggle-remove").textContent = "拆除：关闭";
+    }
+
+    function toggleRemove() {
+      gameState.removing = !gameState.removing;
+      if (gameState.removing) gameState.selection = null;
+      updateToolDisplay();
+      renderBuildMenu();
+    }
+
+    function rotate(delta) {
+      gameState.rotation = (gameState.rotation + delta + directions.length) % directions.length;
+      updateToolDisplay();
+    }
 
     function tick() {
-      state.tick++;
-      const produced = {};
-      const consumed = {};
+      const order = Array.from(gameState.buildings.values());
+      order.forEach(building => {
+        switch (building.type) {
+          case "miner":
+            processMiner(building);
+            break;
+          case "belt":
+            processBelt(building);
+            break;
+          case "furnace":
+            processFurnace(building);
+            break;
+          case "inserter":
+            processInserter(building);
+            break;
+          case "assembler":
+            processAssembler(building);
+            break;
+          case "lab":
+            processLab(building);
+            break;
+        }
+      });
+      updateResources();
+      renderBuildMenu();
+      renderResearch();
+    }
 
-      recomputePower();
-      const powerAvailable = state.power.production - state.power.consumption;
-      const powerRatio = state.power.production === 0 ? 0 : Math.min(1, state.power.production / Math.max(state.power.consumption, 1));
+    function processMiner(building) {
+      building.cooldown -= 1;
+      if (building.cooldown > 0) return;
+      const tile = gameState.world[building.y][building.x];
+      const deposit = tile.deposit;
+      if (!deposit || (deposit !== "iron" && deposit !== "copper")) return;
+      const resourceKey = deposit === "iron" ? "ironOre" : "copperOre";
+      const target = getFrontTile(building);
+      if (tryInsertItem(target, resourceKey)) {
+        building.cooldown = 2;
+      } else {
+        building.cooldown = 1;
+      }
+    }
 
-      for (const building of state.buildings) {
-        const blueprint = buildingCatalog[building.type];
-        if (!blueprint) continue;
-        if (blueprint.power < 0 && powerAvailable < 0) {
-          // power shortage, run at reduced efficiency
-          const efficiency = powerRatio;
-          processBuilding(building, blueprint, produced, consumed, efficiency);
+    function processBelt(building) {
+      if (building.items.length === 0) return;
+      const item = building.items[0];
+      item.progress += 0.5;
+      if (item.progress >= 1) {
+        const target = getFrontTile(building);
+        if (tryInsertItem(target, item.type)) {
+          building.items.shift();
         } else {
-          processBuilding(building, blueprint, produced, consumed, 1);
+          item.progress = 1;
         }
       }
-
-      applyResourceChanges(produced, consumed);
-      renderResources();
-      renderPower();
-      renderTechTree();
     }
 
-    function processBuilding(building, blueprint, produced, consumed, efficiency) {
-      const inputs = blueprint.inputs || {};
-      const outputs = typeof blueprint.outputs === "function" ? blueprint.outputs(building.tile) : blueprint.outputs || {};
-      const canRun = Object.entries(inputs).every(([res, amount]) => (state.resources[res] || 0) >= amount * efficiency);
-      if (!canRun) return;
-
-      for (const [res, amount] of Object.entries(inputs)) {
-        consumed[res] = (consumed[res] || 0) + amount * efficiency;
+    function processFurnace(building) {
+      const inv = building.inventory;
+      const inputTile = getBackTile(building);
+      pullFromInput(building, inputTile, ["ironOre", "copperOre"], inv);
+      if (inv.ironOre > 0) {
+        building.progress += 0.5;
+        if (building.progress >= 2) {
+          inv.ironOre -= 1;
+          inv.output.push("ironPlate");
+          building.progress = 0;
+        }
+      } else if (inv.copperOre > 0) {
+        building.progress += 0.5;
+        if (building.progress >= 2) {
+          inv.copperOre -= 1;
+          inv.output.push("copperPlate");
+          building.progress = 0;
+        }
+      } else {
+        building.progress = 0;
       }
-      for (const [res, amount] of Object.entries(outputs)) {
-        produced[res] = (produced[res] || 0) + amount * efficiency;
+      if (inv.output.length > 0) {
+        const target = getFrontTile(building);
+        if (tryInsertItem(target, inv.output[0])) {
+          inv.output.shift();
+        }
       }
     }
 
-    function applyResourceChanges(produced, consumed) {
-      const capacity = state.capacity + state.capacityBonus;
-      for (const [res, amount] of Object.entries(consumed)) {
-        state.resources[res] = Math.max(0, (state.resources[res] || 0) - amount);
+    function processAssembler(building) {
+      const inv = building.inventory;
+      const inputTile = getBackTile(building);
+      pullFromInput(building, inputTile, ["ironPlate", "copperPlate"], inv);
+      const hasIron = inv.ironPlate >= 1;
+      const hasCopper = inv.copperPlate >= 1;
+      if (hasIron && hasCopper) {
+        building.progress += 0.5;
+        if (building.progress >= 2) {
+          inv.ironPlate -= 1;
+          inv.copperPlate -= 1;
+          inv.output.push("sciencePack1");
+          building.progress = 0;
+        }
+      } else {
+        building.progress = 0;
       }
-      for (const [res, amount] of Object.entries(produced)) {
-        const newValue = (state.resources[res] || 0) + amount;
-        state.resources[res] = Math.min(capacity, newValue);
+      if (inv.output.length > 0) {
+        const target = getFrontTile(building);
+        if (tryInsertItem(target, inv.output[0])) {
+          inv.output.shift();
+        }
       }
-      Object.keys(state.resources).forEach(res => {
-        const delta = (produced[res] || 0) - (consumed[res] || 0);
-        resourceDelta[res] = delta;
-      });
     }
 
-    function renderPower() {
-      const { production, consumption } = state.power;
-      const balance = production - consumption;
-      el.powerBalance.textContent = `${balance >= 0 ? "+" : ""}${balance.toFixed(1)} MW`;
-      el.powerBalance.style.color = balance >= 0 ? "var(--good)" : "var(--danger)";
-      el.powerDetail.textContent = `产出 ${production.toFixed(1)} MW / 消耗 ${consumption.toFixed(1)} MW`;
+    function processInserter(building) {
+      if (building.cooldown > 0) {
+        building.cooldown -= 1;
+        return;
+      }
+      if (building.held) {
+        const target = getFrontTile(building);
+        if (tryInsertItem(target, building.held)) {
+          building.held = null;
+          building.cooldown = 1;
+        }
+        return;
+      }
+      const source = getBackTile(building);
+      const item = tryExtractItem(source);
+      if (item) {
+        building.held = item;
+        building.cooldown = 1;
+      }
     }
 
-    function render() {
-      renderMap();
-      renderBuildMenu();
-      renderResources();
-      renderTechTree();
-      renderPower();
-      renderLog();
+    function processLab(building) {
+      const active = gameState.research.active;
+      if (!active) return;
+      const tech = techTree.find(t => t.id === active);
+      if (!tech) return;
+      const requirements = Object.keys(tech.cost);
+      const inputTile = getBackTile(building);
+      pullFromInput(building, inputTile, requirements, building.inventory);
+      for (const key of requirements) {
+        const stored = building.inventory[key] || 0;
+        if (stored > 0 && !isTechCompleted(active)) {
+          consumeResearchItem(active, key);
+          building.inventory[key] -= 1;
+          building.progress = 0;
+          break;
+        }
+      }
     }
 
-    function resetGame() {
-      state = initialState();
-      initMap();
-      addLog("新殖民地已在银河边缘建立。利用矿脉并扩展电力网络开始自动化！");
-      render();
+    function pullFromInput(building, tile, keys, inventory) {
+      if (!tile) return;
+      const item = tryExtractItem(tile, keys);
+      if (item) {
+        inventory[item] = (inventory[item] || 0) + 1;
+      }
     }
 
-    function loadGame() {
-      const saved = localStorage.getItem("stellar-forge-save");
-      if (!saved) return false;
-      try {
-        state = JSON.parse(saved);
-        // revive tile references
-        state.buildings.forEach(building => {
-          const { x, y } = building.tile;
-          building.tile = state.map[y][x];
-          building.tile.building = { type: building.type };
-        });
-        addLog("成功加载之前的殖民地状态。");
-        render();
+    function tryInsertItem(tile, item) {
+      if (!tile) {
+        gainResource(item, 1);
         return true;
-      } catch (err) {
-        console.error(err);
-        return false;
+      }
+      const data = gameState.world[tile.y][tile.x];
+      if (!data.building) {
+        gainResource(item, 1);
+        updateTile(tile.x, tile.y);
+        return true;
+      }
+      const building = gameState.buildings.get(data.building);
+      switch (building.type) {
+        case "belt":
+          if (building.items.length === 0) {
+            building.items.push({ type: item, progress: 0 });
+            return true;
+          }
+          return false;
+        case "furnace":
+          if (item === "ironOre" || item === "copperOre") {
+            building.inventory[item] += 1;
+            return true;
+          }
+          return false;
+        case "assembler":
+          if (item === "ironPlate" || item === "copperPlate") {
+            building.inventory[item] += 1;
+            return true;
+          }
+          return false;
+        case "lab":
+          const active = gameState.research.active;
+          if (!active) return false;
+          const tech = techTree.find(t => t.id === active);
+          if (!tech || !tech.cost[item]) return false;
+          building.inventory[item] = (building.inventory[item] || 0) + 1;
+          return true;
+        default:
+          return false;
       }
     }
 
-    function autosave() {
-      const snapshot = JSON.stringify({
-        ...state,
-        map: state.map.map(row => row.map(tile => ({
-          x: tile.x,
-          y: tile.y,
-          deposit: tile.deposit,
-          building: tile.building ? { type: tile.building.type } : null,
-        }))),
-        buildings: state.buildings.map(building => ({
-          type: building.type,
-          tile: { x: building.tile.x, y: building.tile.y },
-        })),
-      });
-      localStorage.setItem("stellar-forge-save", snapshot);
+    function tryExtractItem(tile, filter = null) {
+      if (!tile) return null;
+      const data = gameState.world[tile.y][tile.x];
+      if (!data.building) return null;
+      const building = gameState.buildings.get(data.building);
+      switch (building.type) {
+        case "belt": {
+          if (building.items.length === 0) return null;
+          const item = building.items[0];
+          if (item.progress < 0.5) return null;
+          if (filter && !matchFilter(item.type, filter)) return null;
+          building.items.shift();
+          return item.type;
+        }
+        case "furnace": {
+          if (building.inventory.output.length === 0) return null;
+          const out = building.inventory.output[0];
+          if (filter && !matchFilter(out, filter)) return null;
+          building.inventory.output.shift();
+          return out;
+        }
+        case "assembler": {
+          if (building.inventory.output.length === 0) return null;
+          const out = building.inventory.output[0];
+          if (filter && !matchFilter(out, filter)) return null;
+          building.inventory.output.shift();
+          return out;
+        }
+        case "lab": {
+          const keys = Object.keys(building.inventory);
+          for (const key of keys) {
+            if (building.inventory[key] > 0 && (!filter || matchFilter(key, filter))) {
+              building.inventory[key] -= 1;
+              return key;
+            }
+          }
+          return null;
+        }
+        default:
+          return null;
+      }
     }
 
-    el.resetGame.addEventListener("click", () => {
-      localStorage.removeItem("stellar-forge-save");
-      resetGame();
-    });
+    function matchFilter(item, filter) {
+      if (!filter) return true;
+      if (Array.isArray(filter)) return filter.includes(item);
+      return item === filter;
+    }
 
-    document.addEventListener("keydown", evt => {
-      if (evt.key === "Escape") {
-        state.selectedBuilding = null;
-        state.buildMode = "build";
+    function getFrontTile(building) {
+      const dir = directions[building.rotation];
+      const nx = building.x + dir.dx;
+      const ny = building.y + dir.dy;
+      if (nx < 0 || ny < 0 || nx >= WORLD_SIZE || ny >= WORLD_SIZE) return null;
+      return { x: nx, y: ny };
+    }
+
+    function getBackTile(building) {
+      const dir = directions[(building.rotation + 2) % directions.length];
+      const nx = building.x + dir.dx;
+      const ny = building.y + dir.dy;
+      if (nx < 0 || ny < 0 || nx >= WORLD_SIZE || ny >= WORLD_SIZE) return null;
+      return { x: nx, y: ny };
+    }
+
+    function renderResearch() {
+      const container = document.getElementById("research-list");
+      container.innerHTML = "";
+      techTree.forEach(tech => {
+        const card = document.createElement("div");
+        card.className = "tech";
+        if (gameState.research.active === tech.id) card.classList.add("active");
+        if (isTechCompleted(tech.id)) card.classList.add("completed");
+        card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;"><strong>${tech.name}</strong><span>${tech.description}</span></div>`;
+        const progress = gameState.research.progress[tech.id] || {};
+        const list = document.createElement("div");
+        list.className = "hint";
+        list.textContent = Object.entries(tech.cost)
+          .map(([key, amount]) => {
+            const have = progress[key] || 0;
+            return `${resourceMeta[key].name} ${have}/${amount}`;
+          })
+          .join("，");
+        card.appendChild(list);
+        const bar = document.createElement("div");
+        bar.className = "progress-bar";
+        const percent = getTechPercent(tech);
+        bar.innerHTML = `<span style="width:${percent * 100}%"></span>`;
+        card.appendChild(bar);
+        if (!isTechCompleted(tech.id)) {
+          const prereqMet = !tech.requires || tech.requires.every(id => isTechCompleted(id));
+          if (prereqMet) {
+            const btn = document.createElement("button");
+            btn.textContent = gameState.research.active === tech.id ? "研究中" : "设为研究";
+            btn.addEventListener("click", () => {
+              gameState.research.active = tech.id;
+              logEvent(`已选择研究：${tech.name}`);
+              renderResearch();
+            });
+            card.appendChild(btn);
+          } else {
+            const lock = document.createElement("div");
+            lock.className = "hint";
+            lock.textContent = "需要先完成前置研究";
+            card.appendChild(lock);
+          }
+        }
+        container.appendChild(card);
+      });
+    }
+
+    function consumeResearchItem(techId, item) {
+      const tech = techTree.find(t => t.id === techId);
+      if (!tech) return;
+      const target = tech.cost[item];
+      if (!target) return;
+      const progress = gameState.research.progress[techId] || (gameState.research.progress[techId] = {});
+      progress[item] = (progress[item] || 0) + 1;
+      if (progress[item] >= target) {
+        const allMet = Object.entries(tech.cost).every(([key, amount]) => (progress[key] || 0) >= amount);
+        if (allMet && !isTechCompleted(techId)) {
+          gameState.research.completed.add(techId);
+          tech.unlocks(gameState);
+        }
+      }
+    }
+
+    function isTechCompleted(id) {
+      return gameState.research.completed.has(id);
+    }
+
+    function getTechPercent(tech) {
+      const progress = gameState.research.progress[tech.id] || {};
+      const total = Object.values(tech.cost).reduce((a, b) => a + b, 0);
+      const done = Object.entries(tech.cost).reduce((acc, [key, amount]) => acc + Math.min(progress[key] || 0, amount), 0);
+      return total === 0 ? 0 : done / total;
+    }
+
+    document.getElementById("rotate-left").addEventListener("click", () => rotate(-1));
+    document.getElementById("rotate-right").addEventListener("click", () => rotate(1));
+    document.getElementById("toggle-remove").addEventListener("click", () => toggleRemove());
+    document.getElementById("reset").addEventListener("click", () => resetState());
+
+    window.addEventListener("keydown", e => {
+      if (e.key === "q" || e.key === "Q") rotate(-1);
+      if (e.key === "e" || e.key === "E") rotate(1);
+      if (e.key === "Escape") {
+        gameState.selection = null;
+        gameState.removing = false;
+        updateToolDisplay();
         renderBuildMenu();
       }
     });
 
-    initMap();
-    if (!loadGame()) {
-      resetGame();
-    }
-
-    setInterval(() => {
-      tick();
-      autosave();
-    }, TICK_INTERVAL);
+    resetState();
+    setInterval(tick, TICK_MS);
   </script>
 </body>
 </html>
