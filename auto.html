@@ -175,6 +175,92 @@
 
     .tile .icon {
       pointer-events: none;
+      z-index: 2;
+    }
+
+    .tile .direction {
+      position: absolute;
+      inset: 4px auto auto 50%;
+      transform: translateX(-50%);
+      font-size: 0.55rem;
+      opacity: 0.65;
+      letter-spacing: 0.08em;
+      pointer-events: none;
+    }
+
+    .tile .belt-item {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.6rem;
+      padding: 1px 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.85);
+      pointer-events: none;
+      z-index: 1;
+      transition: transform 120ms ease, background 160ms ease;
+    }
+
+    .tile .belt-item.ironOre {
+      background: rgba(112, 162, 255, 0.38);
+    }
+
+    .tile .belt-item.copperOre {
+      background: rgba(255, 168, 112, 0.38);
+    }
+
+    .tile .belt-item.ironPlate {
+      background: rgba(156, 219, 255, 0.42);
+    }
+
+    .tile .belt-item.copperPlate {
+      background: rgba(255, 215, 156, 0.42);
+    }
+
+    .tile .belt-item.sciencePack1 {
+      background: rgba(156, 132, 255, 0.42);
+    }
+
+    .tile .inventory-tags {
+      position: absolute;
+      bottom: 3px;
+      left: 4px;
+      right: 4px;
+      display: flex;
+      justify-content: center;
+      gap: 0.2rem;
+      font-size: 0.52rem;
+      pointer-events: none;
+    }
+
+    .tile .inventory-tags span {
+      padding: 1px 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+
+    .tile .progress-track {
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      bottom: 16px;
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .tile .progress-track span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+      opacity: 0.75;
+      transition: width 120ms ease;
     }
 
     .selection-bar {
@@ -418,6 +504,8 @@
       { dx: -1, dy: 0, name: "左" },
     ];
 
+    const directionalBuildingTypes = new Set(["miner", "belt", "furnace", "inserter", "assembler"]);
+
     const initialResources = {
       ironOre: 40,
       copperOre: 40,
@@ -474,7 +562,7 @@
         icon: "🤖",
         cost: { ironPlate: 2, copperPlate: 2 },
         description: "从后方取物并放入前方建筑或传送带。",
-        requires: state => state.research.unlocks.inserter,
+        requires: () => true,
         placement: tile => !tile.building,
       },
       assembler: {
@@ -501,12 +589,11 @@
       {
         id: "automation",
         name: "基础自动化",
-        description: "解锁机械臂与自动工作台。",
+        description: "解锁自动工作台。",
         cost: { ironPlate: 20, copperPlate: 15 },
         unlocks: state => {
-          state.research.unlocks.inserter = true;
           state.research.unlocks.assembler = true;
-          logEvent("基础自动化完成，自动化核心建筑现已可用。");
+          logEvent("基础自动化完成，自动工作台现已可用。");
         },
       },
       {
@@ -534,7 +621,7 @@
         progress: {},
         unlocks: {
           furnace: true,
-          inserter: false,
+          inserter: true,
           assembler: false,
         },
         completed: new Set(),
@@ -552,7 +639,7 @@
       gameState.research = {
         active: null,
         progress: {},
-        unlocks: { furnace: true, inserter: false, assembler: false },
+        unlocks: { furnace: true, inserter: true, assembler: false },
         completed: new Set(),
       };
       renderWorld();
@@ -562,6 +649,7 @@
       updateToolDisplay();
       clearLog();
       logEvent("殖民地初始化完成，矿脉生成于辽阔平原。");
+      logEvent("初始装备已包含传送带与机械臂，立即铺设物流线吧。");
     }
 
     function generateWorld() {
@@ -609,7 +697,8 @@
           if (data.building) {
             tile.classList.add("building");
             const building = gameState.buildings.get(data.building);
-            tile.innerHTML = `<span class="icon">${buildingCatalog[building.type].icon}</span>`;
+            tile.dataset.building = building.type;
+            tile.innerHTML = renderBuildingContent(building);
           }
           tile.addEventListener("click", () => onTileClick(x, y));
           tile.addEventListener("contextmenu", e => {
@@ -628,12 +717,136 @@
       const data = gameState.world[y][x];
       tileEl.className = "tile";
       tileEl.innerHTML = "";
+      delete tileEl.dataset.building;
       if (data.deposit) tileEl.classList.add(`deposit-${data.deposit}`);
       if (data.building) {
         tileEl.classList.add("building");
         const building = gameState.buildings.get(data.building);
-        tileEl.innerHTML = `<span class="icon">${buildingCatalog[building.type].icon}</span>`;
+        tileEl.dataset.building = building.type;
+        tileEl.innerHTML = renderBuildingContent(building);
       }
+    }
+
+    function renderBuildingContent(building) {
+      const def = buildingCatalog[building.type];
+      const direction = directions[building.rotation]?.name ?? "";
+      const directionIcon = directionalBuildingTypes.has(building.type) ? getDirectionIcon(building.rotation) : "";
+      let extra = "";
+      switch (building.type) {
+        case "belt":
+          extra = renderBeltItem(building);
+          break;
+        case "furnace":
+          extra = renderProductionStatus(building, 2, [
+            { key: "ironOre", label: "铁矿" },
+            { key: "copperOre", label: "铜矿" },
+            { key: "output", label: "出料", isOutput: true },
+          ]);
+          break;
+        case "assembler":
+          extra = renderProductionStatus(building, 2, [
+            { key: "ironPlate", label: "铁板" },
+            { key: "copperPlate", label: "铜板" },
+            { key: "output", label: "科技", isOutput: true },
+          ]);
+          break;
+        case "lab":
+          extra = renderLabStatus(building);
+          break;
+        case "miner":
+          extra = renderMinerStatus(building);
+          break;
+        case "inserter":
+          extra = renderInserterStatus(building);
+          break;
+      }
+      const directionLabel = directionIcon
+        ? `<span class="direction">${directionIcon} ${direction}</span>`
+        : "";
+      return `
+        <span class="icon">${def.icon}</span>
+        ${directionLabel}
+        ${extra}
+      `;
+    }
+
+    function getDirectionIcon(rotation) {
+      switch (rotation) {
+        case 0:
+          return "↑";
+        case 1:
+          return "→";
+        case 2:
+          return "↓";
+        case 3:
+          return "←";
+        default:
+          return "";
+      }
+    }
+
+    const itemIcons = {
+      ironOre: "Fe",
+      copperOre: "Cu",
+      ironPlate: "板",
+      copperPlate: "铜",
+      gear: "齿",
+      circuit: "电",
+      sciencePack1: "科",
+    };
+
+    function renderBeltItem(building) {
+      const item = building.items[0];
+      if (!item) {
+        return '<span class="belt-item">空</span>';
+      }
+      const icon = itemIcons[item.type] ?? "物";
+      const progress = Math.max(0, Math.min(item.progress ?? 0, 1));
+      const dir = directions[building.rotation] || { dx: 0, dy: -1 };
+      const distance = 8;
+      const offsetX = dir.dx * (progress * distance - distance / 2);
+      const offsetY = dir.dy * (progress * distance - distance / 2);
+      return `<span class="belt-item ${item.type}" style="transform: translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px));">${icon}</span>`;
+    }
+
+    function renderProductionStatus(building, requiredTicks, keys) {
+      const progressRatio = Math.min(building.progress / requiredTicks, 1);
+      const tags = keys
+        .map(entry => {
+          if (entry.isOutput) {
+            const count = building.inventory.output?.length || 0;
+            return count > 0 ? `<span>${entry.label}×${count}</span>` : "";
+          }
+          const value = building.inventory[entry.key] || 0;
+          return value > 0 ? `<span>${entry.label}×${value}</span>` : "";
+        })
+        .filter(Boolean)
+        .join("");
+      const tagHtml = tags ? `<div class="inventory-tags">${tags}</div>` : "";
+      const progressHtml = progressRatio > 0 ? `<div class="progress-track"><span style="width:${progressRatio * 100}%"></span></div>` : "";
+      return `${progressHtml}${tagHtml}`;
+    }
+
+    function renderLabStatus(building) {
+      const keys = Object.entries(building.inventory || {})
+        .filter(([_, count]) => count > 0)
+        .map(([key, count]) => `<span>${resourceMeta[key]?.name || key}×${count}</span>`)
+        .join("");
+      return keys ? `<div class="inventory-tags">${keys}</div>` : "";
+    }
+
+    function renderMinerStatus(building) {
+      const cooldown = Math.max(building.cooldown || 0, 0);
+      const ratio = Math.min(1 - cooldown / 2, 1);
+      return ratio > 0 && ratio < 1
+        ? `<div class="progress-track"><span style="width:${ratio * 100}%"></span></div>`
+        : "";
+    }
+
+    function renderInserterStatus(building) {
+      if (!building.held) return "";
+      const icon = itemIcons[building.held] ?? "物";
+      return `<span class="belt-item ${building.held}" style="top:20px;left:50%;transform:translate(-50%,0);">${icon}</span>`;
     }
 
     function renderBuildMenu() {
@@ -853,9 +1066,16 @@
             break;
         }
       });
+      refreshDynamicTiles();
       updateResources();
       renderBuildMenu();
       renderResearch();
+    }
+
+    function refreshDynamicTiles() {
+      gameState.buildings.forEach(building => {
+        updateTile(building.x, building.y);
+      });
     }
 
     function processMiner(building) {
@@ -1005,18 +1225,21 @@
         case "belt":
           if (building.items.length === 0) {
             building.items.push({ type: item, progress: 0 });
+            updateTile(tile.x, tile.y);
             return true;
           }
           return false;
         case "furnace":
           if (item === "ironOre" || item === "copperOre") {
             building.inventory[item] += 1;
+            updateTile(tile.x, tile.y);
             return true;
           }
           return false;
         case "assembler":
           if (item === "ironPlate" || item === "copperPlate") {
             building.inventory[item] += 1;
+            updateTile(tile.x, tile.y);
             return true;
           }
           return false;
@@ -1026,6 +1249,7 @@
           const tech = techTree.find(t => t.id === active);
           if (!tech || !tech.cost[item]) return false;
           building.inventory[item] = (building.inventory[item] || 0) + 1;
+          updateTile(tile.x, tile.y);
           return true;
         default:
           return false;
@@ -1044,6 +1268,7 @@
           if (item.progress < 0.5) return null;
           if (filter && !matchFilter(item.type, filter)) return null;
           building.items.shift();
+          updateTile(tile.x, tile.y);
           return item.type;
         }
         case "furnace": {
@@ -1051,6 +1276,7 @@
           const out = building.inventory.output[0];
           if (filter && !matchFilter(out, filter)) return null;
           building.inventory.output.shift();
+          updateTile(tile.x, tile.y);
           return out;
         }
         case "assembler": {
@@ -1058,6 +1284,7 @@
           const out = building.inventory.output[0];
           if (filter && !matchFilter(out, filter)) return null;
           building.inventory.output.shift();
+          updateTile(tile.x, tile.y);
           return out;
         }
         case "lab": {
@@ -1065,6 +1292,7 @@
           for (const key of keys) {
             if (building.inventory[key] > 0 && (!filter || matchFilter(key, filter))) {
               building.inventory[key] -= 1;
+              updateTile(tile.x, tile.y);
               return key;
             }
           }
