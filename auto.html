@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自动化星球指挥台</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", "PingFang SC", sans-serif;
+    }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 50% -10%, #1f2a44 0%, #0b0f18 55%, #05070c 100%);
+      color: #e1ecff;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      padding: 12px 24px;
+      background: rgba(5, 12, 24, 0.76);
+      border-bottom: 1px solid rgba(112, 155, 255, 0.18);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #8eb6ff;
+    }
+    #status-line {
+      display: flex;
+      gap: 18px;
+      font-size: 14px;
+      color: #c5d7ff;
+      flex-wrap: wrap;
+    }
+    #status-line span {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      background: rgba(36, 53, 90, 0.35);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+    #status-line span strong {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 13px;
+    }
+    #status-line span em {
+      font-style: normal;
+      color: #9ec8ff;
+      font-size: 13px;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+    #grid-wrapper {
+      flex: 1;
+      overflow: auto;
+      padding: 16px 24px 24px;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(24, 44px);
+      grid-auto-rows: 44px;
+      gap: 2px;
+      user-select: none;
+      width: max-content;
+    }
+    .cell {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      position: relative;
+      border: 1px solid rgba(45, 75, 128, 0.24);
+      background: rgba(15, 23, 39, 0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: 11px;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: border 0.15s, background 0.15s, transform 0.15s;
+    }
+    .cell.resource-iron {
+      background: linear-gradient(145deg, rgba(56, 83, 134, 0.88), rgba(16, 26, 45, 0.9));
+    }
+    .cell.resource-copper {
+      background: linear-gradient(145deg, rgba(126, 82, 49, 0.88), rgba(25, 21, 18, 0.92));
+    }
+    .cell:hover,
+    .cell.hover {
+      border-color: rgba(142, 192, 255, 0.9);
+      transform: translateY(-1px);
+    }
+    .cell.has-structure {
+      box-shadow: inset 0 0 12px rgba(142, 192, 255, 0.1);
+    }
+    .cell span {
+      pointer-events: none;
+      padding: 0 4px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .cell .resource-tag {
+      background: rgba(142, 192, 255, 0.18);
+      color: #9ebdff;
+    }
+    .cell .structure-tag {
+      background: rgba(120, 214, 169, 0.18);
+      color: #97ffce;
+    }
+    .cell .item-tag {
+      background: rgba(255, 198, 112, 0.18);
+      color: #ffdca8;
+    }
+    .cell[data-structure="belt"]::after,
+    .cell[data-structure="inserter"]::after,
+    .cell[data-structure="miner"]::after,
+    .cell[data-structure="smelter"]::after,
+    .cell[data-structure="assembler"]::after,
+    .cell[data-structure="lab"]::after {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border: 1px dashed rgba(130, 180, 255, 0.22);
+      border-radius: 6px;
+      opacity: 0.6;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+    .cell[data-structure="belt"]::before,
+    .cell[data-structure="inserter"]::before,
+    .cell[data-structure="miner"]::before,
+    .cell[data-structure="smelter"]::before,
+    .cell[data-structure="assembler"]::before,
+    .cell[data-structure="lab"]::before {
+      content: '▲';
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      font-size: 11px;
+      color: rgba(173, 206, 255, 0.85);
+      transform-origin: center;
+      pointer-events: none;
+    }
+    .cell[data-direction="north"]::before { transform: rotate(0deg); }
+    .cell[data-direction="east"]::before { transform: rotate(90deg); }
+    .cell[data-direction="south"]::before { transform: rotate(180deg); }
+    .cell[data-direction="west"]::before { transform: rotate(270deg); }
+    #sidebar {
+      width: 320px;
+      background: rgba(8, 14, 26, 0.78);
+      border-left: 1px solid rgba(112, 155, 255, 0.15);
+      padding: 18px 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    #selection-panel {
+      background: rgba(22, 32, 52, 0.65);
+      border: 1px solid rgba(112, 155, 255, 0.22);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #toolbar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    #toolbar button {
+      background: rgba(25, 39, 68, 0.82);
+      border: 1px solid rgba(112, 155, 255, 0.25);
+      color: #d8e6ff;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s, border 0.2s, transform 0.15s;
+      text-align: left;
+      line-height: 1.3;
+      min-height: 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #toolbar button:hover {
+      background: rgba(57, 90, 150, 0.82);
+      border-color: rgba(142, 192, 255, 0.55);
+      transform: translateY(-1px);
+    }
+    #toolbar button.active {
+      background: linear-gradient(135deg, rgba(86, 125, 220, 0.9), rgba(50, 88, 168, 0.9));
+      border-color: rgba(182, 212, 255, 0.9);
+      box-shadow: 0 0 12px rgba(118, 176, 255, 0.35);
+    }
+    #toolbar button.locked {
+      border-style: dashed;
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    #toolbar button.insufficient {
+      opacity: 0.75;
+    }
+    #toolbar button .title {
+      font-weight: 600;
+    }
+    #toolbar button .cost {
+      color: #9cb5e6;
+      font-size: 12px;
+    }
+    #selection-info {
+      font-size: 13px;
+      color: #c6d9ff;
+      line-height: 1.5;
+      background: rgba(16, 24, 44, 0.6);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #selection-info strong {
+      font-size: 15px;
+      color: #e6f1ff;
+    }
+    #selection-info .cost {
+      color: #9bb7ff;
+    }
+    #selection-info .hint {
+      font-size: 12px;
+      color: #8c9aba;
+    }
+    #rotation-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+      color: #d6e4ff;
+    }
+    #rotation-controls button {
+      border-radius: 6px;
+      border: 1px solid rgba(112, 155, 255, 0.3);
+      background: rgba(27, 44, 78, 0.8);
+      color: #d6e4ff;
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: background 0.2s, border 0.2s;
+    }
+    #rotation-controls button:hover {
+      background: rgba(57, 90, 150, 0.82);
+      border-color: rgba(142, 192, 255, 0.55);
+    }
+    #rotation-indicator {
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(142, 192, 255, 0.18);
+      color: #9ec8ff;
+    }
+    #inventory-panel,
+    #tile-panel,
+    #research-panel,
+    #log-panel {
+      background: rgba(22, 32, 52, 0.6);
+      border: 1px solid rgba(112, 155, 255, 0.18);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    #inventory-panel h2,
+    #tile-panel h2,
+    #research-panel h2,
+    #log-panel h2,
+    #selection-panel h2 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: #8eb6ff;
+      letter-spacing: 1px;
+    }
+    #inventory-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 12px;
+      font-size: 13px;
+    }
+    #inventory-list div {
+      color: #dde9ff;
+    }
+    #tile-info {
+      font-size: 13px;
+      color: #d0defd;
+      line-height: 1.5;
+      white-space: pre-line;
+      min-height: 90px;
+    }
+    #research-name {
+      font-size: 13px;
+      color: #dce6ff;
+      margin-bottom: 6px;
+    }
+    #research-progress {
+      width: 100%;
+      height: 8px;
+      background: rgba(24, 38, 70, 0.7);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    #research-progress span {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(108, 178, 255, 0.9), rgba(96, 214, 199, 0.9));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    #research-summary {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #9fb1d6;
+      line-height: 1.4;
+    }
+    #log {
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #b7c9f3;
+      padding-right: 4px;
+    }
+    #log div {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>COLONY AUTOMATA</h1>
+    <div id="status-line">
+      <span><strong>铁板</strong><em id="status-iron">0</em></span>
+      <span><strong>铜板</strong><em id="status-copper">0</em></span>
+      <span><strong>科技等级</strong><em id="status-tier">I</em></span>
+      <span><strong>研究进度</strong><em id="status-progress">0%</em></span>
+    </div>
+  </header>
+  <main>
+    <div id="grid-wrapper">
+      <div id="grid"></div>
+    </div>
+    <aside id="sidebar">
+      <div id="selection-panel">
+        <h2>建造目录</h2>
+        <div id="toolbar"></div>
+        <div id="selection-info">
+          <strong id="selection-name">采矿机</strong>
+          <div class="cost" id="selection-cost">成本：-</div>
+          <div id="selection-desc">-</div>
+          <div class="hint">提示：左键放置，右键拆除，Shift+左键收集。</div>
+        </div>
+        <div id="rotation-controls">
+          <button id="rotate-button">旋转 (R)</button>
+          <span>当前朝向：<span id="rotation-indicator">→</span></span>
+        </div>
+      </div>
+      <div id="inventory-panel">
+        <h2>库存</h2>
+        <div id="inventory-list"></div>
+      </div>
+      <div id="tile-panel">
+        <h2>格子信息</h2>
+        <div id="tile-info">悬停查看格子详情</div>
+      </div>
+      <div id="research-panel">
+        <h2>研究</h2>
+        <div id="research-name">自动化基础</div>
+        <div id="research-progress"><span></span></div>
+        <div id="research-summary">进度：0 / 0</div>
+      </div>
+      <div id="log-panel">
+        <h2>殖民记要</h2>
+        <div id="log"></div>
+      </div>
+    </aside>
+  </main>
+  <script>
+    (() => {
+      const GRID_SIZE = 24;
+      const STEP = 0.25;
+      const grid = Array.from({ length: GRID_SIZE }, () =>
+        Array.from({ length: GRID_SIZE }, () => ({ resource: null, structure: null }))
+      );
+
+      const directionOrder = ['north', 'east', 'south', 'west'];
+      const directionVectors = {
+        north: { x: 0, y: -1 },
+        east: { x: 1, y: 0 },
+        south: { x: 0, y: 1 },
+        west: { x: -1, y: 0 }
+      };
+      const directionText = { north: '北', east: '东', south: '南', west: '西' };
+      const directionArrows = { north: '↑', east: '→', south: '↓', west: '←' };
+
+      const resourceNames = { ironOre: '铁矿脉', copperOre: '铜矿脉' };
+      const resourceLabels = { ironOre: 'Fe', copperOre: 'Cu' };
+      const resourceClass = { ironOre: 'resource-iron', copperOre: 'resource-copper' };
+
+      const itemNames = {
+        ironOre: '铁矿石',
+        copperOre: '铜矿石',
+        ironPlate: '铁板',
+        copperPlate: '铜板',
+        sciencePack: '科技包'
+      };
+      const itemShort = { ironOre: 'Fe', copperOre: 'Cu', ironPlate: '板', copperPlate: '铜板', sciencePack: '科' };
+
+      const structureNames = {
+        miner: '采矿机',
+        belt: '传送带',
+        inserter: '机械臂',
+        smelter: '熔炉',
+        assembler: '自动工作台',
+        lab: '研究中心'
+      };
+      const structureShort = { miner: '矿机', belt: '传', inserter: '臂', smelter: '炉', assembler: '装', lab: '研' };
+
+      const researchNames = ['自动化基础', '物流扩展', '星球规划', '深空科技'];
+      const romanNumerals = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
+
+      const gridEl = document.getElementById('grid');
+      const tileInfoEl = document.getElementById('tile-info');
+      const toolbarEl = document.getElementById('toolbar');
+      const selectionNameEl = document.getElementById('selection-name');
+      const selectionCostEl = document.getElementById('selection-cost');
+      const selectionDescEl = document.getElementById('selection-desc');
+      const rotationIndicatorEl = document.getElementById('rotation-indicator');
+      const inventoryListEl = document.getElementById('inventory-list');
+      const researchNameEl = document.getElementById('research-name');
+      const researchBarEl = document.querySelector('#research-progress span');
+      const researchSummaryEl = document.getElementById('research-summary');
+      const logEl = document.getElementById('log');
+      const statusIronEl = document.getElementById('status-iron');
+      const statusCopperEl = document.getElementById('status-copper');
+      const statusTierEl = document.getElementById('status-tier');
+      const statusProgressEl = document.getElementById('status-progress');
+      const rotateButton = document.getElementById('rotate-button');
+
+      const cells = [];
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.x = x;
+          cell.dataset.y = y;
+          gridEl.appendChild(cell);
+          cells.push(cell);
+        }
+      }
+
+      const cellIndex = (x, y) => y * GRID_SIZE + x;
+      const inBounds = (x, y) => x >= 0 && y >= 0 && x < GRID_SIZE && y < GRID_SIZE;
+      const getTile = (x, y) => (inBounds(x, y) ? grid[x][y] : null);
+      const getStructureAt = (x, y) => {
+        const tile = getTile(x, y);
+        return tile ? tile.structure : null;
+      };
+
+      const structures = new Set();
+      const dirtyCells = new Set();
+      const buttonMap = new Map();
+      let hoverIndex = -1;
+      let rotationIndex = 1;
+      let selectedBuild = 'miner';
+
+      const playerInventory = {
+        ironOre: 0,
+        copperOre: 0,
+        ironPlate: 40,
+        copperPlate: 24,
+        sciencePack: 0
+      };
+
+      const researchState = { tier: 1, progress: 0, goal: 30 };
+      let researchDirty = false;
+
+      let minerInterval = 3.5;
+      let smelterCycle = 5;
+      let assemblerCycle = 7;
+      let labCycle = 4;
+      let beltSpeed = 1;
+      let inserterSpeed = 0.6;
+
+      const catalog = [
+        {
+          key: 'miner',
+          name: '采矿机',
+          description: '放置在铁或铜矿脉上以开采矿石。',
+          cost: { ironPlate: 8, copperPlate: 4 },
+          rotatable: true
+        },
+        {
+          key: 'belt',
+          name: '传送带',
+          description: '沿当前朝向运输货物，每格可暂存一件物品。',
+          cost: { ironPlate: 1 },
+          rotatable: true
+        },
+        {
+          key: 'inserter',
+          name: '机械臂',
+          description: '从背面格子抓取物品，并将其放置到朝向格子。',
+          cost: { ironPlate: 4, copperPlate: 2 },
+          rotatable: true
+        },
+        {
+          key: 'smelter',
+          name: '熔炉',
+          description: '将铁矿石或铜矿石冶炼为对应金属板。',
+          cost: { ironPlate: 12 },
+          rotatable: true
+        },
+        {
+          key: 'assembler',
+          name: '自动工作台',
+          description: '消耗铁板和铜板合成科技包。',
+          cost: { ironPlate: 10, copperPlate: 6 },
+          rotatable: true
+        },
+        {
+          key: 'lab',
+          name: '研究中心',
+          description: '消耗科技包推进科技等级，解锁全局加成。',
+          cost: { ironPlate: 8, copperPlate: 8 },
+          rotatable: true
+        },
+        {
+          key: 'remove',
+          name: '拆除工具',
+          description: '拆除建筑并返还部分成本。',
+          cost: {},
+          rotatable: false
+        }
+      ];
+      const catalogMap = new Map(catalog.map(entry => [entry.key, entry]));
+      const unlocked = new Set(catalog.map(entry => entry.key));
+      function createItemTag(item) {
+        const span = document.createElement('span');
+        span.className = 'item-tag';
+        span.textContent = itemShort[item] ?? item;
+        return span;
+      }
+
+      function buildCellTooltip(tile, x, y) {
+        const lines = [];
+        if (tile.resource) {
+          const amount = tile.resource.amount === Infinity ? '丰富' : Math.max(0, Math.floor(tile.resource.amount));
+          lines.push(`${resourceNames[tile.resource.type]}（${amount}）`);
+        }
+        if (tile.structure) {
+          lines.push(structureNames[tile.structure.type] ?? tile.structure.type);
+          if (tile.structure.direction) {
+            lines.push(`朝向：${directionText[tile.structure.direction]}`);
+          }
+        }
+        if (!lines.length) {
+          lines.push('空地');
+        }
+        lines.push(`坐标：(${x}, ${y})`);
+        return lines.join('\n');
+      }
+
+      function buildTileInfo(tile, x, y) {
+        const lines = [`坐标：(${x}, ${y})`];
+        if (tile.resource) {
+          const amount = tile.resource.amount === Infinity ? '丰富' : Math.max(0, Math.floor(tile.resource.amount));
+          lines.push(`矿脉：${resourceNames[tile.resource.type]}（剩余${amount}）`);
+        } else {
+          lines.push('矿脉：无');
+        }
+        if (tile.structure) {
+          lines.push(`建筑：${structureNames[tile.structure.type]}`);
+          if (tile.structure.direction) {
+            lines.push(`朝向：${directionText[tile.structure.direction]}`);
+          }
+          switch (tile.structure.type) {
+            case 'belt':
+              lines.push(`货物：${tile.structure.cargo.length ? itemNames[tile.structure.cargo[0].item] : '空'}`);
+              break;
+            case 'miner':
+              lines.push(`缓冲：${tile.structure.buffer.length ? tile.structure.buffer.length + ' 件' : '空'}`);
+              break;
+            case 'smelter':
+              lines.push(`库存：铁矿 ${tile.structure.input.ironOre} / 铜矿 ${tile.structure.input.copperOre}`);
+              lines.push(`输出：${tile.structure.output.length ? itemNames[tile.structure.output[0]] : '无'}`);
+              break;
+            case 'assembler':
+              lines.push(`库存：铁板 ${tile.structure.input.ironPlate} / 铜板 ${tile.structure.input.copperPlate}`);
+              lines.push(`输出：${tile.structure.output.length ? '科技包' : '无'}`);
+              break;
+            case 'lab':
+              lines.push(`待研究科技包：${tile.structure.science.toFixed(0)}`);
+              break;
+            case 'inserter':
+              lines.push(`机械臂状态：${tile.structure.holding ? '握持 ' + itemNames[tile.structure.holding] : '空手'}`);
+              break;
+          }
+        } else {
+          lines.push('建筑：无');
+        }
+        lines.push('操作：左键建造 / 右键拆除 / Shift+左键收集');
+        return lines.join('\n');
+      }
+
+      function renderCell(x, y) {
+        const index = cellIndex(x, y);
+        const cell = cells[index];
+        const tile = grid[x][y];
+        const classes = ['cell'];
+        if (tile.resource) {
+          classes.push('resource', resourceClass[tile.resource.type] ?? '');
+        }
+        if (tile.structure) {
+          classes.push('has-structure', `structure-${tile.structure.type}`);
+        }
+        if (index === hoverIndex) {
+          classes.push('hover');
+        }
+        cell.className = classes.join(' ').trim();
+        if (tile.structure && tile.structure.direction) {
+          cell.dataset.direction = tile.structure.direction;
+        } else {
+          delete cell.dataset.direction;
+        }
+        if (tile.structure) {
+          cell.dataset.structure = tile.structure.type;
+        } else {
+          delete cell.dataset.structure;
+        }
+        if (tile.resource) {
+          cell.dataset.resource = tile.resource.type;
+        } else {
+          delete cell.dataset.resource;
+        }
+
+        const spans = [];
+        if (tile.resource) {
+          const span = document.createElement('span');
+          span.className = 'resource-tag';
+          const amount = tile.resource.amount === Infinity ? '' : `·${Math.max(0, Math.floor(tile.resource.amount))}`;
+          span.textContent = `${resourceLabels[tile.resource.type] ?? ''}${amount}`;
+          spans.push(span);
+        }
+        if (tile.structure) {
+          const span = document.createElement('span');
+          span.className = 'structure-tag';
+          span.textContent = structureShort[tile.structure.type] ?? tile.structure.type;
+          spans.push(span);
+
+          if (tile.structure.type === 'belt' && tile.structure.cargo.length > 0) {
+            spans.push(createItemTag(tile.structure.cargo[0].item));
+          } else if (tile.structure.type === 'miner' && tile.structure.buffer.length > 0) {
+            spans.push(createItemTag(tile.structure.buffer[0]));
+          } else if ((tile.structure.type === 'smelter' || tile.structure.type === 'assembler') && tile.structure.output.length > 0) {
+            spans.push(createItemTag(tile.structure.output[0]));
+          } else if (tile.structure.type === 'lab' && tile.structure.science >= 1) {
+            const scienceTag = document.createElement('span');
+            scienceTag.className = 'item-tag';
+            scienceTag.textContent = `科×${Math.floor(tile.structure.science)}`;
+            spans.push(scienceTag);
+          } else if (tile.structure.type === 'inserter' && tile.structure.holding) {
+            spans.push(createItemTag(tile.structure.holding));
+          }
+        }
+
+        if (spans.length) {
+          cell.replaceChildren(...spans);
+        } else {
+          cell.replaceChildren();
+        }
+        cell.title = buildCellTooltip(tile, x, y);
+      }
+
+      function markDirty(x, y) {
+        if (!inBounds(x, y)) return;
+        dirtyCells.add(cellIndex(x, y));
+      }
+
+      function flushDirty() {
+        if (!dirtyCells.size) return;
+        const needInfoUpdate = hoverIndex >= 0 && dirtyCells.has(hoverIndex);
+        dirtyCells.forEach(index => {
+          const x = index % GRID_SIZE;
+          const y = Math.floor(index / GRID_SIZE);
+          renderCell(x, y);
+        });
+        dirtyCells.clear();
+        if (needInfoUpdate) {
+          const x = hoverIndex % GRID_SIZE;
+          const y = Math.floor(hoverIndex / GRID_SIZE);
+          const tile = getTile(x, y);
+          if (tile) {
+            tileInfoEl.textContent = buildTileInfo(tile, x, y);
+          }
+        }
+      }
+
+      function renderAll() {
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            renderCell(x, y);
+          }
+        }
+      }
+      function pushLog(message) {
+        const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+        const line = document.createElement('div');
+        line.textContent = `[${time}] ${message}`;
+        logEl.appendChild(line);
+        if (logEl.children.length > 200) {
+          logEl.removeChild(logEl.firstChild);
+        }
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function formatCost(cost) {
+        const entries = Object.entries(cost);
+        if (!entries.length) return '无';
+        return entries
+          .map(([item, amount]) => `${amount}×${itemNames[item] ?? item}`)
+          .join(' / ');
+      }
+
+      function canAfford(cost) {
+        return Object.entries(cost).every(([item, amount]) => (playerInventory[item] ?? 0) >= amount);
+      }
+
+      function spendCost(cost) {
+        Object.entries(cost).forEach(([item, amount]) => {
+          playerInventory[item] = (playerInventory[item] ?? 0) - amount;
+        });
+      }
+
+      function refundCost(cost) {
+        Object.entries(cost).forEach(([item, amount]) => {
+          const refund = Math.max(1, Math.round(amount * 0.5));
+          playerInventory[item] = (playerInventory[item] ?? 0) + refund;
+        });
+      }
+
+      function addItem(item, amount = 1) {
+        if (!amount) return;
+        playerInventory[item] = (playerInventory[item] ?? 0) + amount;
+      }
+
+      function updateInventoryUI() {
+        inventoryListEl.replaceChildren();
+        const entries = Object.entries(playerInventory).filter(([, amount]) => amount > 0);
+        if (!entries.length) {
+          const empty = document.createElement('div');
+          empty.textContent = '库存为空';
+          inventoryListEl.appendChild(empty);
+        } else {
+          entries.forEach(([item, amount]) => {
+            const label = document.createElement('div');
+            label.textContent = itemNames[item] ?? item;
+            const value = document.createElement('div');
+            value.style.textAlign = 'right';
+            value.textContent = amount;
+            inventoryListEl.append(label, value);
+          });
+        }
+        refreshToolbarAffordability();
+        updateStatus();
+      }
+
+      function updateStatus() {
+        statusIronEl.textContent = playerInventory.ironPlate ?? 0;
+        statusCopperEl.textContent = playerInventory.copperPlate ?? 0;
+      }
+
+      function updateResearchUI() {
+        const index = Math.min(researchState.tier - 1, researchNames.length - 1);
+        const nextIndex = Math.min(index + 1, researchNames.length - 1);
+        researchNameEl.textContent = `${researchNames[index]} - 等级 ${researchState.tier}`;
+        const pct = Math.min(100, Math.floor((researchState.progress / researchState.goal) * 100));
+        researchBarEl.style.width = `${pct}%`;
+        researchSummaryEl.textContent = `进度：${researchState.progress} / ${researchState.goal}（下一阶段：${researchNames[nextIndex]}）`;
+        statusTierEl.textContent = romanNumerals[researchState.tier] ?? researchState.tier;
+        statusProgressEl.textContent = `${pct}%`;
+      }
+
+      function updateSelection(entry = catalogMap.get(selectedBuild)) {
+        if (!entry) return;
+        selectionNameEl.textContent = entry.name;
+        selectionCostEl.textContent = `成本：${formatCost(entry.cost)}`;
+        selectionDescEl.textContent = entry.description;
+      }
+
+      function updateToolbarSelection() {
+        buttonMap.forEach((button, key) => {
+          button.classList.toggle('active', key === selectedBuild);
+        });
+      }
+
+      function refreshToolbarAffordability() {
+        buttonMap.forEach((button, key) => {
+          const entry = catalogMap.get(key);
+          if (!entry) return;
+          const affordable = canAfford(entry.cost);
+          button.classList.toggle('insufficient', !affordable && key !== 'remove');
+        });
+      }
+
+      function selectBuild(key) {
+        if (!unlocked.has(key)) return;
+        selectedBuild = key;
+        updateSelection();
+        updateToolbarSelection();
+      }
+
+      function rebuildToolbar() {
+        toolbarEl.replaceChildren();
+        buttonMap.clear();
+        catalog.forEach((entry, index) => {
+          const button = document.createElement('button');
+          if (!unlocked.has(entry.key)) {
+            button.classList.add('locked');
+            button.disabled = true;
+          }
+          const title = document.createElement('span');
+          title.className = 'title';
+          const hotkey = index < 9 ? ` [${index + 1}]` : '';
+          title.textContent = entry.name + hotkey;
+          const cost = document.createElement('span');
+          cost.className = 'cost';
+          cost.textContent = `成本：${formatCost(entry.cost)}`;
+          button.append(title, cost);
+          button.addEventListener('click', () => {
+            if (!unlocked.has(entry.key)) return;
+            selectBuild(entry.key);
+          });
+          toolbarEl.appendChild(button);
+          buttonMap.set(entry.key, button);
+        });
+        updateToolbarSelection();
+        refreshToolbarAffordability();
+      }
+
+      function updateRotationIndicator() {
+        rotationIndicatorEl.textContent = directionArrows[directionOrder[rotationIndex]];
+      }
+
+      function getNeighborCoord(x, y, direction) {
+        const vec = directionVectors[direction];
+        if (!vec) return null;
+        const nx = x + vec.x;
+        const ny = y + vec.y;
+        if (!inBounds(nx, ny)) return null;
+        return { x: nx, y: ny };
+      }
+
+      function oppositeDirection(direction) {
+        switch (direction) {
+          case 'north': return 'south';
+          case 'south': return 'north';
+          case 'east': return 'west';
+          case 'west': return 'east';
+          default: return null;
+        }
+      }
+      function addStructure(structure) {
+        structures.add(structure);
+        const tile = getTile(structure.x, structure.y);
+        if (tile) {
+          tile.structure = structure;
+          markDirty(structure.x, structure.y);
+        }
+      }
+
+      function removeStructure(x, y) {
+        const tile = getTile(x, y);
+        if (!tile || !tile.structure) {
+          pushLog('此处没有建筑。');
+          return;
+        }
+        const structure = tile.structure;
+        tile.structure = null;
+        structures.delete(structure);
+        refundCost(structure.cost);
+        const collected = [];
+        if (structure.type === 'belt') {
+          structure.cargo.forEach(c => {
+            addItem(c.item);
+            collected.push(itemNames[c.item] ?? c.item);
+          });
+        } else if (structure.type === 'miner') {
+          structure.buffer.forEach(item => {
+            addItem(item);
+            collected.push(itemNames[item] ?? item);
+          });
+        } else if (structure.type === 'smelter') {
+          Object.entries(structure.input).forEach(([item, amount]) => addItem(item, amount));
+          structure.output.forEach(item => {
+            addItem(item);
+            collected.push(itemNames[item] ?? item);
+          });
+        } else if (structure.type === 'assembler') {
+          Object.entries(structure.input).forEach(([item, amount]) => addItem(item, amount));
+          structure.output.forEach(item => {
+            addItem(item);
+            collected.push(itemNames[item] ?? item);
+          });
+        } else if (structure.type === 'lab') {
+          const amount = Math.floor(structure.science);
+          if (amount > 0) {
+            addItem('sciencePack', amount);
+            collected.push(`${amount}×${itemNames.sciencePack}`);
+          }
+        } else if (structure.type === 'inserter' && structure.holding) {
+          addItem(structure.holding);
+          collected.push(itemNames[structure.holding] ?? structure.holding);
+        }
+        markDirty(x, y);
+        updateInventoryUI();
+        pushLog(`拆除了${structureNames[structure.type] ?? structure.type}，返还部分资源。`);
+        if (collected.length) {
+          pushLog(`回收：${collected.join('、')}`);
+        }
+      }
+
+      function collectFromTile(x, y) {
+        const tile = getTile(x, y);
+        if (!tile || !tile.structure) {
+          pushLog('此处没有可收集的物品。');
+          return;
+        }
+        const structure = tile.structure;
+        const collected = [];
+
+        const pullItem = item => {
+          if (!item) return;
+          addItem(item);
+          collected.push(itemNames[item] ?? item);
+        };
+
+        if (structure.type === 'belt') {
+          const cargo = structure.cargo.shift();
+          if (cargo) pullItem(cargo.item);
+        } else if (structure.type === 'miner') {
+          const item = structure.buffer.shift();
+          if (item) pullItem(item);
+        } else if (structure.type === 'smelter' || structure.type === 'assembler') {
+          const item = structure.output.shift();
+          if (item) pullItem(item);
+        } else if (structure.type === 'lab') {
+          const amount = Math.floor(structure.science);
+          if (amount > 0) {
+            addItem('sciencePack', amount);
+            structure.science -= amount;
+            collected.push(`${amount}×${itemNames.sciencePack}`);
+          }
+        } else if (structure.type === 'inserter' && structure.holding) {
+          pullItem(structure.holding);
+          structure.holding = null;
+        }
+
+        if (collected.length) {
+          pushLog(`收集：${collected.join('、')}`);
+          markDirty(x, y);
+          updateInventoryUI();
+        } else {
+          pushLog('没有可收集的物品。');
+        }
+      }
+
+      function deliverItem(structure, item) {
+        if (!structure.direction) return false;
+        const next = getNeighborCoord(structure.x, structure.y, structure.direction);
+        if (!next) return false;
+        const target = getStructureAt(next.x, next.y);
+        if (!target) return false;
+        const accepted = acceptItem(target, item);
+        if (accepted) {
+          markDirty(next.x, next.y);
+        }
+        return accepted;
+      }
+
+      function acceptItem(structure, item) {
+        switch (structure.type) {
+          case 'belt':
+            if (structure.cargo.length >= structure.capacity) return false;
+            structure.cargo.push({ item, progress: 0 });
+            markDirty(structure.x, structure.y);
+            return true;
+          case 'smelter':
+            if ((item === 'ironOre' || item === 'copperOre') && structure.input[item] < structure.capacity) {
+              structure.input[item] += 1;
+              markDirty(structure.x, structure.y);
+              return true;
+            }
+            return false;
+          case 'assembler':
+            if ((item === 'ironPlate' || item === 'copperPlate') && structure.input[item] < structure.capacity) {
+              structure.input[item] += 1;
+              markDirty(structure.x, structure.y);
+              return true;
+            }
+            return false;
+          case 'lab':
+            if (item === 'sciencePack') {
+              structure.science += 1;
+              markDirty(structure.x, structure.y);
+              return true;
+            }
+            return false;
+          default:
+            return false;
+        }
+      }
+
+      function takeItem(structure) {
+        if (!structure) return null;
+        switch (structure.type) {
+          case 'belt':
+            if (structure.cargo.length === 0) return null;
+            if (structure.cargo[0].progress < 0.5) return null;
+            const cargo = structure.cargo.shift();
+            markDirty(structure.x, structure.y);
+            return cargo.item;
+          case 'miner':
+            if (!structure.buffer.length) return null;
+            const item = structure.buffer.shift();
+            markDirty(structure.x, structure.y);
+            return item;
+          case 'smelter':
+          case 'assembler':
+            if (!structure.output.length) return null;
+            const out = structure.output.shift();
+            markDirty(structure.x, structure.y);
+            return out;
+          case 'lab':
+            if (structure.science < 1) return null;
+            structure.science -= 1;
+            markDirty(structure.x, structure.y);
+            return 'sciencePack';
+          default:
+            return null;
+        }
+      }
+      function createStructure(entry, x, y, direction) {
+        switch (entry.key) {
+          case 'belt':
+            return {
+              type: 'belt',
+              x,
+              y,
+              direction,
+              cargo: [],
+              capacity: 1,
+              cost: entry.cost
+            };
+          case 'miner': {
+            const tile = getTile(x, y);
+            if (!tile || !tile.resource || !['ironOre', 'copperOre'].includes(tile.resource.type)) {
+              pushLog('采矿机必须放置在铁或铜矿脉上。');
+              return null;
+            }
+            return {
+              type: 'miner',
+              x,
+              y,
+              direction,
+              buffer: [],
+              progress: 0,
+              interval: minerInterval,
+              resourceType: tile.resource.type,
+              cost: entry.cost
+            };
+          }
+          case 'inserter':
+            return {
+              type: 'inserter',
+              x,
+              y,
+              direction,
+              holding: null,
+              cooldown: 0,
+              speed: inserterSpeed,
+              cost: entry.cost
+            };
+          case 'smelter':
+            return {
+              type: 'smelter',
+              x,
+              y,
+              direction,
+              input: { ironOre: 0, copperOre: 0 },
+              output: [],
+              progress: 0,
+              cycle: smelterCycle,
+              capacity: 12,
+              cost: entry.cost
+            };
+          case 'assembler':
+            return {
+              type: 'assembler',
+              x,
+              y,
+              direction,
+              input: { ironPlate: 0, copperPlate: 0 },
+              output: [],
+              progress: 0,
+              cycle: assemblerCycle,
+              capacity: 12,
+              cost: entry.cost
+            };
+          case 'lab':
+            return {
+              type: 'lab',
+              x,
+              y,
+              direction,
+              science: 0,
+              progress: 0,
+              cycle: labCycle,
+              cost: entry.cost
+            };
+          default:
+            return null;
+        }
+      }
+
+      function tryPlaceStructure(x, y) {
+        const entry = catalogMap.get(selectedBuild);
+        if (!entry) return;
+        if (entry.key === 'remove') {
+          removeStructure(x, y);
+          return;
+        }
+        if (!canAfford(entry.cost)) {
+          pushLog('资源不足，无法建造。');
+          return;
+        }
+        const tile = getTile(x, y);
+        if (!tile) return;
+        if (tile.structure) {
+          pushLog('此格已被其他建筑占用。');
+          return;
+        }
+        const direction = entry.rotatable ? directionOrder[rotationIndex] : 'north';
+        const structure = createStructure(entry, x, y, direction);
+        if (!structure) return;
+        spendCost(entry.cost);
+        addStructure(structure);
+        updateInventoryUI();
+        pushLog(`建造了${entry.name}（${x}, ${y}）。`);
+        tileInfoEl.textContent = buildTileInfo(tile, x, y);
+      }
+
+      function rotate(step = 1) {
+        rotationIndex = (rotationIndex + step + directionOrder.length) % directionOrder.length;
+        updateRotationIndicator();
+      }
+
+      function updateMiner(miner, dt) {
+        const tile = getTile(miner.x, miner.y);
+        if (!tile || !tile.resource || tile.resource.type !== miner.resourceType || tile.resource.amount <= 0) {
+          return;
+        }
+        miner.progress += dt;
+        if (miner.progress >= miner.interval) {
+          miner.progress = 0;
+          tile.resource.amount = Math.max(0, tile.resource.amount - 1);
+          const item = miner.resourceType === 'ironOre' ? 'ironOre' : 'copperOre';
+          if (!deliverItem(miner, item)) {
+            if (miner.buffer.length < 4) {
+              miner.buffer.push(item);
+              markDirty(miner.x, miner.y);
+            }
+          }
+          if (tile.resource.amount === 0) {
+            pushLog(`矿脉在 (${miner.x}, ${miner.y}) 附近枯竭。`);
+            tile.resource = null;
+            markDirty(miner.x, miner.y);
+          } else {
+            markDirty(miner.x, miner.y);
+          }
+        }
+        if (miner.buffer.length > 0) {
+          const delivered = deliverItem(miner, miner.buffer[0]);
+          if (delivered) {
+            miner.buffer.shift();
+            markDirty(miner.x, miner.y);
+          }
+        }
+      }
+
+      function updateBelt(belt, dt) {
+        if (!belt.cargo.length) return;
+        const cargo = belt.cargo[0];
+        cargo.progress += dt * beltSpeed;
+        if (cargo.progress >= 1) {
+          const delivered = deliverItem(belt, cargo.item);
+          if (delivered) {
+            belt.cargo.shift();
+            markDirty(belt.x, belt.y);
+          } else {
+            cargo.progress = 1;
+          }
+        }
+      }
+
+      function updateSmelter(smelter, dt) {
+        const hasIron = smelter.input.ironOre > 0;
+        const hasCopper = smelter.input.copperOre > 0;
+        if (hasIron || hasCopper) {
+          smelter.progress += dt;
+          if (smelter.progress >= smelter.cycle) {
+            smelter.progress = 0;
+            let product = null;
+            if (hasIron) {
+              smelter.input.ironOre -= 1;
+              product = 'ironPlate';
+            } else if (hasCopper) {
+              smelter.input.copperOre -= 1;
+              product = 'copperPlate';
+            }
+            if (product) {
+              smelter.output.push(product);
+              pushLog(`熔炉在 (${smelter.x}, ${smelter.y}) 完成了${itemNames[product]}`);
+              markDirty(smelter.x, smelter.y);
+            }
+          }
+        } else {
+          smelter.progress = 0;
+        }
+        if (smelter.output.length > 0) {
+          const delivered = deliverItem(smelter, smelter.output[0]);
+          if (delivered) {
+            smelter.output.shift();
+            markDirty(smelter.x, smelter.y);
+          }
+        }
+      }
+      function updateAssembler(assembler, dt) {
+        if (assembler.input.ironPlate > 0 && assembler.input.copperPlate > 0) {
+          assembler.progress += dt;
+          if (assembler.progress >= assembler.cycle) {
+            assembler.progress = 0;
+            assembler.input.ironPlate -= 1;
+            assembler.input.copperPlate -= 1;
+            assembler.output.push('sciencePack');
+            pushLog(`自动工作台在 (${assembler.x}, ${assembler.y}) 制造了科技包`);
+            markDirty(assembler.x, assembler.y);
+          }
+        } else {
+          assembler.progress = 0;
+        }
+        if (assembler.output.length > 0) {
+          const delivered = deliverItem(assembler, assembler.output[0]);
+          if (delivered) {
+            assembler.output.shift();
+            markDirty(assembler.x, assembler.y);
+          }
+        }
+      }
+
+      function updateInserter(inserter, dt) {
+        inserter.cooldown = Math.max(0, inserter.cooldown - dt);
+        const sourceDir = oppositeDirection(inserter.direction);
+        const targetCoord = getNeighborCoord(inserter.x, inserter.y, inserter.direction);
+        if (!targetCoord) return;
+        if (!inserter.holding) {
+          if (!sourceDir) return;
+          const sourceCoord = getNeighborCoord(inserter.x, inserter.y, sourceDir);
+          if (!sourceCoord || inserter.cooldown > 0) return;
+          const source = getStructureAt(sourceCoord.x, sourceCoord.y);
+          if (!source) return;
+          const item = takeItem(source);
+          if (item) {
+            inserter.holding = item;
+            inserter.cooldown = inserter.speed;
+            markDirty(inserter.x, inserter.y);
+          }
+        } else {
+          if (inserter.cooldown > 0) return;
+          const target = getStructureAt(targetCoord.x, targetCoord.y);
+          if (target && acceptItem(target, inserter.holding)) {
+            inserter.holding = null;
+            inserter.cooldown = inserter.speed;
+            markDirty(inserter.x, inserter.y);
+          }
+        }
+      }
+
+      function updateLab(lab, dt) {
+        if (lab.science >= 1) {
+          lab.progress += dt;
+          if (lab.progress >= lab.cycle) {
+            lab.progress = 0;
+            lab.science -= 1;
+            researchState.progress += 1;
+            researchDirty = true;
+            markDirty(lab.x, lab.y);
+            if (researchState.progress >= researchState.goal) {
+              researchState.progress = 0;
+              researchState.tier += 1;
+              researchState.goal = Math.max(researchState.goal + 20, Math.round(researchState.goal * 1.6));
+              pushLog(`研究完成！科技等级提升至 ${researchState.tier}。`);
+              handleResearchTierUp(researchState.tier);
+            }
+          }
+        } else {
+          lab.progress = 0;
+        }
+      }
+
+      function handleResearchTierUp(tier) {
+        if (tier === 2) {
+          assemblerCycle = Math.max(4.5, assemblerCycle * 0.8);
+          structures.forEach(struct => {
+            if (struct.type === 'assembler') struct.cycle = assemblerCycle;
+          });
+          pushLog('研究成果：自动工作台效率提升 20%。');
+        } else if (tier === 3) {
+          beltSpeed += 0.35;
+          inserterSpeed = Math.max(0.45, inserterSpeed * 0.9);
+          structures.forEach(struct => {
+            if (struct.type === 'inserter') struct.speed = inserterSpeed;
+          });
+          pushLog('研究成果：传送带与机械臂运行速度提升。');
+        } else if (tier === 4) {
+          minerInterval = Math.max(2.4, minerInterval * 0.82);
+          smelterCycle = Math.max(3.5, smelterCycle * 0.85);
+          structures.forEach(struct => {
+            if (struct.type === 'miner') struct.interval = minerInterval;
+            if (struct.type === 'smelter') struct.cycle = smelterCycle;
+          });
+          pushLog('研究成果：采矿与冶炼效率显著提升。');
+        }
+      }
+
+      function stepSimulation(dt) {
+        structures.forEach(structure => {
+          switch (structure.type) {
+            case 'miner':
+              updateMiner(structure, dt);
+              break;
+            case 'belt':
+              updateBelt(structure, dt);
+              break;
+            case 'smelter':
+              updateSmelter(structure, dt);
+              break;
+            case 'assembler':
+              updateAssembler(structure, dt);
+              break;
+            case 'inserter':
+              updateInserter(structure, dt);
+              break;
+            case 'lab':
+              updateLab(structure, dt);
+              break;
+          }
+        });
+        if (researchDirty) {
+          updateResearchUI();
+          researchDirty = false;
+        }
+      }
+
+      function scatterResource(type, patchCount, sizeRange) {
+        for (let i = 0; i < patchCount; i++) {
+          const cx = Math.floor(Math.random() * GRID_SIZE);
+          const cy = Math.floor(Math.random() * GRID_SIZE);
+          const count = sizeRange[0] + Math.floor(Math.random() * (sizeRange[1] - sizeRange[0] + 1));
+          for (let t = 0; t < count; t++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 2.6;
+            const x = Math.round(cx + Math.cos(angle) * dist);
+            const y = Math.round(cy + Math.sin(angle) * dist);
+            if (!inBounds(x, y)) continue;
+            const tile = grid[x][y];
+            if (tile.resource) continue;
+            tile.resource = { type, amount: Math.floor(80 + Math.random() * 80) };
+          }
+        }
+      }
+
+      function placePatch(cx, cy, type) {
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const tile = getTile(cx + dx, cy + dy);
+            if (!tile) continue;
+            tile.resource = { type, amount: Math.floor(120 + Math.random() * 60) };
+          }
+        }
+      }
+
+      function ensureStartingArea() {
+        const cx = Math.floor(GRID_SIZE / 2);
+        const cy = Math.floor(GRID_SIZE / 2);
+        for (let dx = -2; dx <= 2; dx++) {
+          for (let dy = -2; dy <= 2; dy++) {
+            const tile = getTile(cx + dx, cy + dy);
+            if (tile) tile.resource = null;
+          }
+        }
+        placePatch(cx - 3, cy, 'ironOre');
+        placePatch(cx + 4, cy + 1, 'copperOre');
+      }
+
+      function generateWorld() {
+        scatterResource('ironOre', 7, [5, 11]);
+        scatterResource('copperOre', 6, [5, 10]);
+        ensureStartingArea();
+      }
+      function handleGridClick(event) {
+        const cell = event.target.closest('.cell');
+        if (!cell) return;
+        const x = Number(cell.dataset.x);
+        const y = Number(cell.dataset.y);
+        if (Number.isNaN(x) || Number.isNaN(y)) return;
+        if (event.shiftKey) {
+          collectFromTile(x, y);
+          return;
+        }
+        tryPlaceStructure(x, y);
+      }
+
+      function handleGridContext(event) {
+        event.preventDefault();
+        const cell = event.target.closest('.cell');
+        if (!cell) return;
+        const x = Number(cell.dataset.x);
+        const y = Number(cell.dataset.y);
+        if (Number.isNaN(x) || Number.isNaN(y)) return;
+        removeStructure(x, y);
+      }
+
+      function handleGridHover(event) {
+        const cell = event.target.closest('.cell');
+        if (!cell) return;
+        const x = Number(cell.dataset.x);
+        const y = Number(cell.dataset.y);
+        if (Number.isNaN(x) || Number.isNaN(y)) return;
+        const index = cellIndex(x, y);
+        if (index === hoverIndex) return;
+        if (hoverIndex >= 0) {
+          cells[hoverIndex].classList.remove('hover');
+        }
+        hoverIndex = index;
+        cell.classList.add('hover');
+        const tile = getTile(x, y);
+        if (tile) {
+          tileInfoEl.textContent = buildTileInfo(tile, x, y);
+        }
+      }
+
+      function clearHover() {
+        if (hoverIndex >= 0) {
+          cells[hoverIndex].classList.remove('hover');
+          hoverIndex = -1;
+        }
+        tileInfoEl.textContent = '悬停查看格子详情';
+      }
+
+      document.addEventListener('keydown', event => {
+        if (event.code === 'KeyR') {
+          rotate(1);
+        } else if (event.code === 'KeyQ') {
+          rotate(-1);
+        } else if (event.code === 'KeyF') {
+          if (hoverIndex >= 0) {
+            const x = hoverIndex % GRID_SIZE;
+            const y = Math.floor(hoverIndex / GRID_SIZE);
+            collectFromTile(x, y);
+          }
+        } else if (event.code === 'Delete') {
+          if (hoverIndex >= 0) {
+            const x = hoverIndex % GRID_SIZE;
+            const y = Math.floor(hoverIndex / GRID_SIZE);
+            removeStructure(x, y);
+          }
+        } else if (event.code.startsWith('Digit')) {
+          const digit = Number(event.code.slice(-1));
+          if (digit >= 1) {
+            const entry = catalog[digit - 1];
+            if (entry) {
+              selectBuild(entry.key);
+            }
+          }
+        }
+      });
+
+      gridEl.addEventListener('click', handleGridClick);
+      gridEl.addEventListener('contextmenu', handleGridContext);
+      gridEl.addEventListener('mousemove', handleGridHover);
+      gridEl.addEventListener('mouseleave', clearHover);
+      rotateButton.addEventListener('click', () => rotate(1));
+
+      generateWorld();
+      renderAll();
+      rebuildToolbar();
+      updateSelection();
+      updateRotationIndicator();
+      updateInventoryUI();
+      updateResearchUI();
+      pushLog('欢迎来到戴森球计划风格的自动化殖民地。');
+      pushLog('提示：左键放置建筑，右键拆除，Shift+左键或按 F 从目标格收集物品。');
+
+      let lastTime = performance.now();
+      let accumulator = 0;
+      function frame(now) {
+        const delta = (now - lastTime) / 1000;
+        lastTime = now;
+        accumulator += delta;
+        while (accumulator >= STEP) {
+          stepSimulation(STEP);
+          accumulator -= STEP;
+        }
+        flushDirty();
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
